@@ -1,0 +1,34 @@
+{
+    "name": "nfragkos/eloquenty",
+    "description": "Statamic addon that allows you to store specific collection entries into the database via Eloquent.",
+    "autoload": {
+        "psr-4": {
+            "Nfragkos\\Eloquenty\\": "src"
+        }
+    },
+    "authors": [
+        {
+            "name": "Nikolas Fragkos",
+            "email": "nikolasfragkos@gmail.com"
+        }
+    ],
+    "extra": {
+        "statamic": {
+            "name": "Eloquenty",
+            "description": "Eloquenty Addon",
+            "editions": [
+                "free"
+            ]
+        },
+        "laravel": {
+            "providers": [
+                "Nfragkos\\Eloquenty\\ServiceProvider"
+            ]
+        }
+    },
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "laravel/framework": "^7.0 || ^8.0",
+        "statamic/cms": "^3.0"
+    }
+}

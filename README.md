@@ -18,9 +18,11 @@ This package allows you to store entries for specific collections to the databas
 Eloquenty uses Statamic Eloquent Driver (https://github.com/statamic/eloquent-driver) but with modifications that allows to use the 
 driver for specific collections entries instead for every entry. 
 
+![Screenshot 2021-01-27 162333](https://user-images.githubusercontent.com/11143495/106163609-09a72300-6192-11eb-9d04-8b67a405eb33.png)
 Both standard and Eloquenty collections will be visible under `/cp/collections` but the Entries column will display the message 
 "Managed by Eloquenty" for Eloquenty collections.
 
+![Screenshot 2021-01-27 162410](https://user-images.githubusercontent.com/11143495/106163445-d82e5780-6191-11eb-84ad-7c9207e8baf8.png)
 Eloquenty collections are managed on a separate route `/cp/eloquenty/collections` which is a clone of `/cp/collections` routes with 
 modifications for using the DbEntry and DbRepository classes. The entry related classes and controllers are extending the Statamic 
 classes thus the frontend components and experience remains the same.

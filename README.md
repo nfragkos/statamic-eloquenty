@@ -6,7 +6,7 @@
 
 This package allows you to store entries for specific collections to the database via Laravel's Eloquent ORM.
 
-**Structures are disabled and not supported for now.**
+**Structures are disabled for performance reasons.**
 
 ## Requirements
 
@@ -23,8 +23,8 @@ Both standard and Eloquenty collections will be visible under `/cp/collections` 
 "Managed by Eloquenty" for Eloquenty collections.
 
 ![Screenshot 2021-01-27 162410](https://user-images.githubusercontent.com/11143495/106163445-d82e5780-6191-11eb-84ad-7c9207e8baf8.png)
-Eloquenty collections are managed on a separate route `/cp/eloquenty/collections` which is a clone of `/cp/collections` routes with 
-modifications for using the DbEntry and DbRepository classes. The entry related classes and controllers are extending the Statamic 
+Eloquenty collections are managed on a separate route `/cp/eloquenty/collections` which is a clone of `/cp/collections` route group with 
+modifications for using the DbEntry and DbEntryRepository classes. The Entry related classes and controllers are extending the original Statamic 
 classes thus the frontend components and experience remains the same.
 
 There's a middleware that redirects from `/cp/collections/{collection}` to `/cp/eloquenty/collections/{collection}` when clicking 
@@ -118,4 +118,4 @@ Pull requests are welcome and will be fully credited.
 The MIT License (MIT). Please see [License File](LICENSE) for more information.
 
 ## Credits
-Many thanks to Statamic developers for the Eloquent driver and the awesome CMS :heart:
+Many thanks to Statamic for the Eloquent driver and the awesome CMS :heart:

@@ -3,9 +3,9 @@
 namespace Eloquenty\Http\Middleware;
 
 use Closure;
+use Eloquenty\Facades\Eloquenty;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Eloquenty\Facades\Eloquenty;
 
 class EloquentyMiddleware
 {
@@ -42,9 +42,19 @@ class EloquentyMiddleware
             return $response;
         }
 
-        // If eloquenty collection  redirect to eloquenty route
-        if ($route->getName() === 'statamic.cp.collections.show' && Eloquenty::isEloquentyCollection($route->parameter('collection'))) {
-            return redirect()->to(cp_route('eloquenty.collections.show', [$route->parameter('collection')]));
+        // If eloquenty collection redirect to eloquenty route
+        if ($route->getName() === 'statamic.cp.collections.show' &&
+            Eloquenty::isEloquentyCollection($route->parameter('collection'))) {
+            return redirect(cp_route('eloquenty.collections.show', ['collection' => $route->parameter('collection')]));
+        }
+
+        // If eloquenty collection redirect to eloquenty route with original entry filtering query string
+        if ($route->getName() === 'statamic.cp.collections.entries.index' &&
+            Eloquenty::isEloquentyCollection($route->parameter('collection'))) {
+            return redirect(
+                cp_route('eloquenty.collections.entries.index', ['collection' => $route->parameter('collection')]) .
+                "?{$request->getQueryString()}"
+            );
         }
 
         return $next($request);

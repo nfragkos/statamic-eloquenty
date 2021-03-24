@@ -5,7 +5,7 @@
 @section('content')
     <collection-view
         title="{{ $collection->title() }}"
-        handle="../eloquenty/collections/{{ $collection->handle() }}"
+        handle="{{ $collection->handle() }}"
         breadcrumb-url="{{ cp_route('eloquenty.collections.index') }}"
         :can-create="@can("create eloquenty_{$collection->handle()} entries", $collection) true @else false @endcan"
         create-url="{{ cp_route('eloquenty.collections.entries.create', [$collection->handle(), $site]) }}"

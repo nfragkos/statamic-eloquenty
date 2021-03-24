@@ -4,6 +4,8 @@ namespace Eloquenty\Entries;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Statamic\Entries\Entry as FileEntry;
+use Statamic\Events\EntrySaved;
+use Statamic\Events\EntrySaving;
 
 /**
  * Eloquenty: From Statamic Eloquent Driver with modifications.
@@ -84,7 +86,8 @@ class Entry extends FileEntry
             return $this->origin;
         }
 
-        if (!$this->model->origin) {
+        // Eloquenty: Fix error when model is null
+        if (!isset($this->model) || !$this->model->origin) {
             return null;
         }
 
@@ -201,12 +204,12 @@ class Entry extends FileEntry
     // Eloquenty: Fix save entry
     public function save()
     {
-        //$afterSaveCallbacks = $this->afterSaveCallbacks;
-        //$this->afterSaveCallbacks = [];
-        //
-        //if (EntrySaving::dispatch($this) === false) {
-        //    return false;
-        //}
+        $afterSaveCallbacks = $this->afterSaveCallbacks;
+        $this->afterSaveCallbacks = [];
+
+        if (EntrySaving::dispatch($this) === false) {
+            return false;
+        }
 
         app(EntryRepository::class)->save($this);
 
@@ -217,14 +220,14 @@ class Entry extends FileEntry
         //}
         //
         //$this->taxonomize();
-        //
-        //optional(Collection::findByMount($this))->updateEntryUris();
-        //
-        //foreach ($afterSaveCallbacks as $callback) {
-        //    $callback($this);
-        //}
-        //
-        //EntrySaved::dispatch($this);
+
+        optional(Collection::findByMount($this))->updateEntryUris();
+
+        foreach ($afterSaveCallbacks as $callback) {
+            $callback($this);
+        }
+
+        EntrySaved::dispatch($this);
 
         return true;
     }

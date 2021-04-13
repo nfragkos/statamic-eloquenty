@@ -86,7 +86,7 @@ class ServiceProvider extends AddonServiceProvider
                 ->icon('collections')
                 ->section('Content')
                 ->route('eloquenty.collections.index')
-                ->can('view')
+                ->can('index', [\Statamic\Contracts\Entries\Collection::class])
                 ->children($children);
         });
     }

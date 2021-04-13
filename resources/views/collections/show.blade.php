@@ -7,7 +7,7 @@
         title="{{ $collection->title() }}"
         handle="{{ $collection->handle() }}"
         breadcrumb-url="{{ cp_route('eloquenty.collections.index') }}"
-        :can-create="@can("create eloquenty_{$collection->handle()} entries", $collection) true @else false @endcan"
+        :can-create="@can("create {$collection->handle()} entries", $collection) true @else false @endcan"
         create-url="{{ cp_route('eloquenty.collections.entries.create', [$collection->handle(), $site]) }}"
         :blueprints="{{ json_encode($blueprints) }}"
         sort-column="date"

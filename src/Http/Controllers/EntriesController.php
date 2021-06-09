@@ -74,6 +74,7 @@ class EntriesController extends StatamicEntriesController
             'values' => $values->all(),
             'meta' => $fields->meta(),
             'collection' => $collection->handle(),
+            'collectionHasRoutes' => ! is_null($collection->route($site->handle())),
             'blueprint' => $blueprint->toPublishArray(),
             'published' => $collection->defaultPublishState(),
             'locale' => $site->handle(),

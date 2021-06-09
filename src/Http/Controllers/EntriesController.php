@@ -3,6 +3,7 @@
 namespace Eloquenty\Http\Controllers;
 
 use Eloquenty\Entries\Entry;
+use Exception;
 use Illuminate\Http\Request;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\CP\Breadcrumbs;
@@ -39,7 +40,7 @@ class EntriesController extends StatamicEntriesController
         $blueprint = $collection->entryBlueprint($request->blueprint);
 
         if (!$blueprint) {
-            throw new \Exception(__('A valid blueprint is required.'));
+            throw new Exception(__('A valid blueprint is required.'));
         }
 
         $values = [];
@@ -177,6 +178,7 @@ class EntriesController extends StatamicEntriesController
             'values' => array_merge($values, ['id' => $entry->id()]),
             'meta' => $meta,
             'collection' => $collection->handle(),
+            'collectionHasRoutes' => !is_null($collection->route($entry->locale())),
             'blueprint' => $blueprint->toPublishArray(),
             'readOnly' => User::current()->cant('edit', $entry),
             'locale' => $entry->locale(),

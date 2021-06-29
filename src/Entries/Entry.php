@@ -2,8 +2,10 @@
 
 namespace Eloquenty\Entries;
 
+use Exception;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 use Statamic\Entries\Entry as FileEntry;
+use Statamic\Events\EntryCreated;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
 
@@ -108,7 +110,7 @@ class Entry extends FileEntry
     public function delete()
     {
         if ($this->descendants()->map->fresh()->filter()->isNotEmpty()) {
-            throw new \Exception('Cannot delete an entry with localizations.');
+            throw new Exception('Cannot delete an entry with localizations.');
         }
 
         //if ($this->hasStructure()) {
@@ -204,13 +206,18 @@ class Entry extends FileEntry
     // Eloquenty: Fix save entry
     public function save()
     {
+        //$isNew = is_null(Facades\Entry::find($this->id()));
+        $isNew = is_null(app(EntryRepository::class)->find($this->id()));
+
         $afterSaveCallbacks = $this->afterSaveCallbacks;
         $this->afterSaveCallbacks = [];
-
-        if (EntrySaving::dispatch($this) === false) {
-            return false;
+        if ($this->withEvents) {
+            if (EntrySaving::dispatch($this) === false) {
+                return false;
+            }
         }
 
+        //Facades\Entry::save($this);
         app(EntryRepository::class)->save($this);
 
         //if ($this->id()) {
@@ -227,7 +234,13 @@ class Entry extends FileEntry
             $callback($this);
         }
 
-        EntrySaved::dispatch($this);
+        if ($this->withEvents) {
+            if ($isNew) {
+                EntryCreated::dispatch($this);
+            }
+
+            EntrySaved::dispatch($this);
+        }
 
         return true;
     }

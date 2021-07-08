@@ -14,8 +14,7 @@
         sort-direction="desc"
         :columns="{{ $columns->toJson() }}"
         :filters="{{ $filters->toJson() }}"
-        run-action-url="{{ cp_route('eloquenty.collections.entries.actions.run', $collection->handle()) }}"
-        bulk-actions-url="{{ cp_route('eloquenty.collections.entries.actions.bulk', $collection->handle()) }}"
+        action-url="{{ cp_route('eloquenty.collections.entries.actions.run', $collection->handle()) }}"
         {{-- reorder-url="{{ cp_route('collections.entries.reorder', $collection->handle()) }}" --}}
         initial-site="{{ $site }}"
         :sites='{{ json_encode($sites) }}'

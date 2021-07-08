@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model as Eloquent;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
 use Statamic\Events\EntrySaved;
-use Statamic\Events\EntrySaving;
+use Statamic\Support\Str;
 
 /**
  * Eloquenty: From Statamic Eloquent Driver with modifications.
@@ -24,7 +24,6 @@ class Entry extends FileEntry
             ->date($model->date)
             ->collection($model->collection)
             ->data($model->data)
-            ->blueprint($model->data['blueprint'] ?? null)
             ->published($model->published)
             ->model($model);
     }
@@ -32,22 +31,15 @@ class Entry extends FileEntry
     public function toModel()
     {
         //Eloquenty: Use eloquenty entry model
-        $class = app('eloquenty.entries.model');
-
-        $data = $this->data();
-
-        if ($this->blueprint && $this->collection() && $this->collection()->entryBlueprints()->count() > 1) {
-            $data['blueprint'] = $this->blueprint;
-        }
-
-        return $class::findOrNew($this->id())->fill([
+        return EntryModel:: findOrNew($this->id())->fill([
+            'id' => $this->id() ?? (string)Str::uuid(),
             'origin_id' => $this->originId(),
             'site' => $this->locale(),
             'slug' => $this->slug(),
             'uri' => $this->uri(),
             'date' => $this->hasDate() ? $this->date() : null,
             'collection' => $this->collectionHandle(),
-            'data' => $data,
+            'data' => $this->data(),
             'published' => $this->published(),
             'status' => $this->status(),
         ]);
@@ -212,9 +204,10 @@ class Entry extends FileEntry
         $afterSaveCallbacks = $this->afterSaveCallbacks;
         $this->afterSaveCallbacks = [];
         if ($this->withEvents) {
-            if (EntrySaving::dispatch($this) === false) {
-                return false;
-            }
+            // Eloquenty: Disabled because $this is loosing its id thus when saved creates a new entry instead of updating the current.
+            //if (EntrySaving::dispatch($this) === false) {
+            //    return false;
+            //}
         }
 
         //Facades\Entry::save($this);

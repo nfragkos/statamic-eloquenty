@@ -105,14 +105,8 @@ class ServiceProvider extends AddonServiceProvider
     {
         Statamic::repository(CollectionRepositoryContract::class, CollectionRepository::class);
 
-        $this->app->bind('eloquenty.entries.model', function () {
-            return EntryModel::class;
-        });
-
         $this->app->bind(EntryQueryBuilder::class, function () {
-            return new EntryQueryBuilder(
-                app('eloquenty.entries.model')::query()
-            );
+            return new EntryQueryBuilder(EntryModel::query());
         });
 
         $this->app->bind(EntryRepository::class, function ($app) {

@@ -2,12 +2,12 @@
 
 All notable changes will be documented in this file.
 
-## 1.0.rc.1 - 2021-07-8
+## 1.0.0.rc.1 - 2021-07-09
 
   - Improvements and fixes from statamic/eloquent-driver:v0.1.1
-  - Disabled temporarily EntrySaving event (breaks delete when detaching localizations)
+  - Enabled EntrySaving event
 
-## 0.9.0.beta.10 - 2021-07-8
+## 0.9.0.beta.10 - 2021-07-08
 
   - Fixed delete and bulk actions.
 

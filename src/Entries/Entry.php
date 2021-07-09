@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model as Eloquent;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
 use Statamic\Events\EntrySaved;
+use Statamic\Events\EntrySaving;
 
 /**
  * Eloquenty: From Statamic Eloquent Driver with modifications.
@@ -209,10 +210,9 @@ class Entry extends FileEntry
         $afterSaveCallbacks = $this->afterSaveCallbacks;
         $this->afterSaveCallbacks = [];
         if ($this->withEvents) {
-            // Eloquenty: Disabled because $this is loosing its id thus when saved creates a new entry instead of updating the current.
-            //if (EntrySaving::dispatch($this) === false) {
-            //    return false;
-            //}
+            if (EntrySaving::dispatch($this) === false) {
+                return false;
+            }
         }
 
         //Facades\Entry::save($this);

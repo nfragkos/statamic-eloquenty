@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model as Eloquent;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
 use Statamic\Events\EntrySaved;
-use Statamic\Support\Str;
 
 /**
  * Eloquenty: From Statamic Eloquent Driver with modifications.
@@ -24,22 +23,28 @@ class Entry extends FileEntry
             ->date($model->date)
             ->collection($model->collection)
             ->data($model->data)
+            ->blueprint($model->data['blueprint'] ?? null)
             ->published($model->published)
             ->model($model);
     }
 
     public function toModel()
     {
+        $data = $this->data();
+
+        if ($this->blueprint && $this->collection()->entryBlueprints()->count() > 1) {
+            $data['blueprint'] = $this->blueprint;
+        }
+
         //Eloquenty: Use eloquenty entry model
         return EntryModel:: findOrNew($this->id())->fill([
-            'id' => $this->id() ?? (string)Str::uuid(),
             'origin_id' => $this->originId(),
             'site' => $this->locale(),
             'slug' => $this->slug(),
             'uri' => $this->uri(),
             'date' => $this->hasDate() ? $this->date() : null,
             'collection' => $this->collectionHandle(),
-            'data' => $this->data(),
+            'data' => $data,
             'published' => $this->published(),
             'status' => $this->status(),
         ]);

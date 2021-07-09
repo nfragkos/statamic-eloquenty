@@ -31,9 +31,7 @@ class EntryModel extends Eloquent
         parent::boot();
 
         static::creating(function ($entry) {
-            if ($entry->{$entry->getKeyName()} === null) {
-                $entry->{$entry->getKeyName()} = (string)Str::uuid();
-            }
+            $entry->{$entry->getKeyName()} = (string) Str::uuid();
         });
     }
 

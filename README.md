@@ -2,8 +2,6 @@
 
 [![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)  
 
-:warning: **Currently in BETA. please do not use in production environments.** :warning:
-
 This package allows you to store entries for specific collections to the database via Laravel's Eloquent ORM.
 
 **Structures are disabled for performance reasons.**

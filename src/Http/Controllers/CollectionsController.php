@@ -26,7 +26,7 @@ class CollectionsController extends StatamicCollectionsController
             return [
                 'id' => $collection->handle(),
                 'title' => $collection->title(),
-                'entries' => $collection->queryEloquentyEntries()->count(),
+                'entries' => $collection->queryEloquentyEntries()->where('site', Site::selected())->count(),
                 'edit_url' => $collection->editUrl(),
                 'delete_url' => $collection->deleteUrl(),
                 'entries_url' => cp_route('eloquenty.collections.show', $collection->handle()),

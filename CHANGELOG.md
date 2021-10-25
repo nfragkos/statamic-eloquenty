@@ -2,6 +2,19 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.0 - 2021-10-25
+
+- Added Eloquenty Entries field type (similar to Entries field type) for creating relationships with eloquenty entries.
+
+## 1.0.1 - 2021-10-15
+
+- Migrated fixes from Statamic v3.2.14:
+  - Collection entry counts are site specific. #4424 by jasonvarga
+
+## 1.0.0 - 2021-09-24
+
+- Stable release
+
 ## 1.0.0.rc.1 - 2021-07-09
 
   - Improvements and fixes from statamic/eloquent-driver:v0.1.1

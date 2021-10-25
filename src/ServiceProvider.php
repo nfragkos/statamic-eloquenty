@@ -8,6 +8,7 @@ use Eloquenty\Entries\EntryModel;
 use Eloquenty\Entries\EntryQueryBuilder;
 use Eloquenty\Entries\EntryRepository;
 use Eloquenty\Facades\Eloquenty as EloquentyFacade;
+use Eloquenty\Fieldtypes\EloquentyEntries;
 use Eloquenty\Helpers\Eloquenty as EloquentyHelper;
 use Eloquenty\Http\Middleware\EloquentyMiddleware;
 use Eloquenty\Listeners\UpdateEntriesUri;
@@ -63,6 +64,7 @@ class ServiceProvider extends AddonServiceProvider
 
         $this->bootNavigation();
         $this->registerServiceProviders();
+        $this->registerFieldtypes();
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -117,5 +119,10 @@ class ServiceProvider extends AddonServiceProvider
             return new EloquentyHelper();
         });
         $this->app->alias('Eloquenty', EloquentyFacade::class);
+    }
+
+    protected function registerFieldtypes()
+    {
+        EloquentyEntries::register();
     }
 }

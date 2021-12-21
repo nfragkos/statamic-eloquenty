@@ -20,7 +20,7 @@ Route::prefix('eloquenty/')->name('eloquenty.')->group(function () {
         //Route::post('reorder', 'ReorderEntriesController')->name('collections.entries.reorder'); // Structures are disabled for Eloquenty
         Route::post('{site}', 'EntriesController@store')->name('collections.entries.store');
 
-        Route::group(['prefix' => '{entry}/{slug}'], function () {
+        Route::group(['prefix' => '{entry}'], function () {
             Route::get('/', 'EntriesController@edit')->name('collections.entries.edit');
             Route::post('publish', 'PublishedEntriesController@store')->name('collections.entries.published.store');
             Route::post('unpublish', 'PublishedEntriesController@destroy')->name('collections.entries.published.destroy');

@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.1 - 2021-12-21
+
+- Migrated fixes and improvements from Statamic v3.2.27
+
 ## 1.1.0 - 2021-10-25
 
 - Added Eloquenty Entries field type (similar to Entries field type) for creating relationships with eloquenty entries.

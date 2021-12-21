@@ -120,4 +120,11 @@ Pull requests are welcome and will be fully credited.
 The MIT License (MIT). Please see [License File](LICENSE) for more information.
 
 ## Credits
+
 Many thanks to Statamic for the Eloquent driver and the awesome CMS :heart:
+
+## Coffee
+
+If you like this addon please consider buying me a coffee:
+ 
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=YFYL64AN3GCEJ)

@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.2 - 2022-01-02
+
+- Fixes editing eloquenty entries when using a custom cp route
+
 ## 1.1.1 - 2021-12-21
 
 - Migrated fixes and improvements from Statamic v3.2.27

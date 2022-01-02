@@ -12,7 +12,8 @@ class RouteServiceProvider extends StatamicServiceProvider
     protected function bindEntries()
     {
         // On Eloquenty routes we bind entry with Eloquenty Entry class
-        if (starts_with(request()->path(), 'cp/eloquenty')) {
+        $cpRoute = config('statamic.cp.route', 'cp');
+        if (starts_with(request()->path(), "$cpRoute/eloquenty")) {
             Route::bind('entry', function ($handle, $route) {
                 $eloquentyEntry = $this->app[EntryRepository::class];
 

@@ -9,14 +9,7 @@ use Illuminate\Http\Response;
 
 class EloquentyMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @return mixed
-     */
-    public function handle(Request $request, Closure $next): mixed
+    public function handle(Request $request, Closure $next)
     {
         $route = $request->route();
 

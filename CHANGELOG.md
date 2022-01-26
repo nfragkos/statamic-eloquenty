@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.3 - 2022-01-26
+
+- Fixed PHP 7.4 support (thanks tomhelmer)
+
 ## 1.1.2 - 2022-01-02
 
 - Fixes editing eloquenty entries when using a custom cp route

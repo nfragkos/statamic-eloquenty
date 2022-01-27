@@ -16,7 +16,7 @@ class Entry extends FileEntry
 {
     protected $model;
 
-    public static function fromModel(Eloquent $model): static
+    public static function fromModel(Eloquent $model)
     {
         return (new static)
             ->locale($model->site)

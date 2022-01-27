@@ -13,20 +13,6 @@ class EntryQueryBuilder extends EloquentQueryBuilder implements QueryBuilder
 {
     use QueriesTaxonomizedEntries;
 
-    protected $columns = [
-        'id',
-        'site',
-        'origin_id',
-        'published',
-        'status',
-        'slug',
-        'uri',
-        'date',
-        'collection',
-        'created_at',
-        'updated_at',
-    ];
-
     //Eloquenty: Use Eloquenty Entry for transform
     protected function transform($items, $columns = [])
     {
@@ -41,7 +27,21 @@ class EntryQueryBuilder extends EloquentQueryBuilder implements QueryBuilder
             $column = 'origin_id';
         }
 
-        if (!in_array($column, $this->columns)) {
+        $columns = [
+            'id',
+            'site',
+            'origin_id',
+            'published',
+            'status',
+            'slug',
+            'uri',
+            'date',
+            'collection',
+            'created_at',
+            'updated_at',
+        ];
+
+        if (!in_array($column, $columns)) {
             $column = 'data->' . $column;
         }
 

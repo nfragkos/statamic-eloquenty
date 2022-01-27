@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.4 - 2022-01-27
+
+- Fixes compatibility with Statamic v3.2.32
+
 ## 1.1.3 - 2022-01-26
 
 - Fixed PHP 7.4 support (thanks tomhelmer)

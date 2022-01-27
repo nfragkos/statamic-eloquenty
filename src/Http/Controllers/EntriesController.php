@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\CP\Breadcrumbs;
+use Statamic\Exceptions\BlueprintNotFoundException;
 use Statamic\Facades\Site;
 use Statamic\Facades\User;
 use Statamic\Http\Controllers\CP\Collections\EntriesController as StatamicEntriesController;
@@ -156,6 +157,14 @@ class EntriesController extends StatamicEntriesController
         $entry = $entry->fromWorkingCopy();
 
         $blueprint = $entry->blueprint();
+
+        if (! $blueprint) {
+            throw new BlueprintNotFoundException($entry->value('blueprint'), 'collections/'.$collection->handle());
+        }
+
+        if (User::current()->cant('edit-other-authors-entries', [EntryContract::class, $collection, $blueprint])) {
+            $blueprint->ensureFieldHasConfig('author', ['read_only' => true]);
+        }
 
         [$values, $meta] = $this->extractFromFields($entry, $blueprint);
 

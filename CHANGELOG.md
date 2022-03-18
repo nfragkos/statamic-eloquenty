@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.6 - 2022-03-18
+
+- Updated composer.json for Laravel 9 support
+
 ## 1.1.5 - 2022-02-05
 
 - Fixed PHP 7.4 support (thanks tomhelmer)

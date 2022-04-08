@@ -64,11 +64,6 @@ class Entry extends FileEntry
         return $this;
     }
 
-    public function lastModified()
-    {
-        return $this->model->updated_at;
-    }
-
     public function origin($origin = null)
     {
         if (func_num_args() > 0) {

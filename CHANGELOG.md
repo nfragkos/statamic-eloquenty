@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.7 - 2022-04-08
+
+- Let Statamic handle the lastModified() result (thanks @ddm-studio) 
+
 ## 1.1.6 - 2022-03-18
 
 - Updated composer.json for Laravel 9 support

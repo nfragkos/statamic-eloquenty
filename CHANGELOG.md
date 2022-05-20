@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 1.1.9 - 2022-05-20
+
+Fix EntryQueryBuilder's paginate() not compatible with EloquentQueryBuilder (thanks @dryven)
+
 ## 1.1.8 - 2022-05-10
 
 - Collections Entry Listing: Respect user-defined sort_by and sort_dir (thanks @dryven)

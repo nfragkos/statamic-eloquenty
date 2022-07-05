@@ -2,6 +2,11 @@
 
 All notable changes will be documented in this file.
 
+## 1.2.0 - 2022-07-05
+
+- Migrated fixes from Statamic v3.3.17
+- Requires Statamic >=v3.3.17
+
 ## 1.1.9 - 2022-05-20
 
 Fix EntryQueryBuilder's paginate() not compatible with EloquentQueryBuilder (thanks @dryven)

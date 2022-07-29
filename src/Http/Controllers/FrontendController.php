@@ -38,9 +38,8 @@ class FrontendController extends StatamicFrontendController
             $url = substr($url, 0, strpos($url, '?'));
         }
 
-        // Eloquenty: Skip Stache
-        if ($data = Data::findByUri($url, Site::current()->handle())) {
-           return $data;
+        if ($data = Data::findByRequestUrl($request->url())) {
+            return $data;
         }
 
         // Eloquenty: Use Eloquenty EntryRepository to find an entry that matches current uri

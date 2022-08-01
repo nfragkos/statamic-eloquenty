@@ -39,7 +39,7 @@ class FrontendController extends StatamicFrontendController
         }
 
         // Eloquenty: Skip Stache
-        //if ($data = Data::findByUri($url, Site::current()->handle())) {
+        //if ($data = Data::findByRequestUrl($request->url())) {
         //    return $data;
         //}
 

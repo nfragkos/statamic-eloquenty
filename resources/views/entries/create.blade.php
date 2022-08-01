@@ -18,5 +18,6 @@
         create-another-url="{{ cp_route('eloquenty.collections.entries.create', [$collection, $locale, 'blueprint' => $blueprint['handle']]) }}"
         listing-url="{{ cp_route('eloquenty.collections.show', $collection) }}"
         :can-manage-publish-state="{{ Statamic\Support\Str::bool($canManagePublishState) }}"
+        :preview-targets="{{ json_encode($previewTargets) }}"
     ></base-entry-create-form>
 @endsection

@@ -127,7 +127,7 @@ class EntriesController extends StatamicEntriesController
             ->data($values);
 
         if ($collection->dated()) {
-            $entry->date($this->formatDateForSaving($request->date));
+            $entry->date($this->toCarbonInstanceForSaving($request->date));
         }
 
         // Eloquenty: Structures are disabled for eloquenty collections
@@ -268,7 +268,7 @@ class EntriesController extends StatamicEntriesController
         $entry->slug($request->slug);
 
         if ($entry->collection()->dated()) {
-            $entry->date($this->formatDateForSaving($request->date));
+            $entry->date($this->toCarbonInstanceForSaving($request->date));
         }
 
         // Eloquenty: Structures are disabled for eloquenty collections

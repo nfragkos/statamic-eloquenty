@@ -2,6 +2,23 @@
 
 All notable changes will be documented in this file.
 
+## 1.2.0 - 2022-07-05
+
+- Migrated fixes from Statamic v3.3.17
+- Requires Statamic >=v3.3.17
+
+## 1.1.9 - 2022-05-20
+
+Fix EntryQueryBuilder's paginate() not compatible with EloquentQueryBuilder (thanks @dryven)
+
+## 1.1.8 - 2022-05-10
+
+- Collections Entry Listing: Respect user-defined sort_by and sort_dir (thanks @dryven)
+
+## 1.1.7 - 2022-04-08
+
+- Let Statamic handle the lastModified() result (thanks @ddm-studio) 
+
 ## 1.1.6 - 2022-03-18
 
 - Updated composer.json for Laravel 9 support

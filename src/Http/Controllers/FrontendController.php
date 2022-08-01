@@ -2,9 +2,10 @@
 
 namespace Eloquenty\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Eloquenty\Entries\EntryRepository;
+use Illuminate\Http\Request;
 use Statamic\Exceptions\NotFoundHttpException;
+use Statamic\Facades\Data;
 use Statamic\Facades\Site;
 use Statamic\Http\Controllers\FrontendController as StatamicFrontendController;
 use Statamic\Statamic;
@@ -38,10 +39,9 @@ class FrontendController extends StatamicFrontendController
             $url = substr($url, 0, strpos($url, '?'));
         }
 
-        // Eloquenty: Skip Stache
-        //if ($data = Data::findByRequestUrl($request->url())) {
-        //    return $data;
-        //}
+        if ($data = Data::findByRequestUrl($request->url())) {
+            return $data;
+        }
 
         // Eloquenty: Use Eloquenty EntryRepository to find an entry that matches current uri
         if ($entry = app(EntryRepository::class)->query()

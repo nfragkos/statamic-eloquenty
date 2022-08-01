@@ -33,5 +33,6 @@
         :can-manage-publish-state="{{ $str::bool($canManagePublishState) }}"
         create-another-url="{{ cp_route('eloquenty.collections.entries.create', [$collection, $locale]) }}"
         listing-url="{{ cp_route('eloquenty.collections.show', $collection) }}"
+        :preview-targets="{{ json_encode($previewTargets) }}"
     ></entry-publish-form>
 @endsection

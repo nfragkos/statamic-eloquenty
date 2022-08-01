@@ -2,6 +2,12 @@
 
 All notable changes will be documented in this file.
 
+## 1.3.0 - 2022-08-01
+
+- Migrated changes from Statamic v3.3.24 (Thanks @v-subz3r0)
+- Requires Statamic >=v3.3.24
+
+
 ## 1.2.0 - 2022-07-05
 
 - Migrated fixes from Statamic v3.3.17

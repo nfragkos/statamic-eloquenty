@@ -2,11 +2,14 @@
 
 All notable changes will be documented in this file.
 
+## 1.3.1 - 2022-10-30
+
+- Fixed EntryModel to keep the id if it is defined on creating event (fixes import command)
+
 ## 1.3.0 - 2022-08-01
 
 - Migrated changes from Statamic v3.3.24 (Thanks @v-subz3r0)
 - Requires Statamic >=v3.3.24
-
 
 ## 1.2.0 - 2022-07-05
 

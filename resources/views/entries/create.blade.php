@@ -6,6 +6,7 @@
     <base-entry-create-form
         :actions="{{ json_encode($actions) }}"
         collection-handle="{{ $collection }}"
+        collection-create-label="{{ $collectionCreateLabel }}"
         :collection-has-routes="{{ Statamic\Support\Str::bool($collectionHasRoutes) }}"
         :fieldset="{{ json_encode($blueprint) }}"
         :values="{{ json_encode($values) }}"

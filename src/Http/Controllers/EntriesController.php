@@ -3,7 +3,6 @@
 namespace Eloquenty\Http\Controllers;
 
 use Eloquenty\Entries\Entry;
-use Exception;
 use Illuminate\Http\Request;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\CP\Breadcrumbs;
@@ -41,10 +40,14 @@ class EntriesController extends StatamicEntriesController
         $blueprint = $collection->entryBlueprint($request->blueprint);
 
         if (!$blueprint) {
-            throw new Exception(__('A valid blueprint is required.'));
+            throw new \Exception(__('A valid blueprint is required.'));
         }
 
-        $values = [];
+        if (User::current()->cant('edit-other-authors-entries', [EntryContract::class, $collection, $blueprint])) {
+            $blueprint->ensureFieldHasConfig('author', ['visibility' => 'read_only']);
+        }
+
+        $values = \Statamic\Facades\Entry::make()->collection($collection)->values()->all();
 
         // Eloquenty: Structures are disabled for eloquenty collections
         //if ($collection->hasStructure() && $request->parent) {
@@ -56,11 +59,11 @@ class EntriesController extends StatamicEntriesController
             ->addValues($values)
             ->preProcess();
 
-        $values = $fields->values()->merge([
+        $values = collect([
             'title' => null,
             'slug' => null,
             'published' => $collection->defaultPublishState(),
-        ]);
+        ])->merge($fields->values());
 
         if ($collection->dated()) {
             $values['date'] = substr(now()->toDateTimeString(), 0, 10);
@@ -75,11 +78,12 @@ class EntriesController extends StatamicEntriesController
             'values' => $values->all(),
             'meta' => $fields->meta(),
             'collection' => $collection->handle(),
-            'collectionHasRoutes' => ! is_null($collection->route($site->handle())),
+            'collectionCreateLabel' => $collection->createLabel(),
+            'collectionHasRoutes' => !is_null($collection->route($site->handle())),
             'blueprint' => $blueprint->toPublishArray(),
             'published' => $collection->defaultPublishState(),
             'locale' => $site->handle(),
-            'localizations' => $collection->sites()->map(function ($handle) use ($collection, $site) {
+            'localizations' => $collection->sites()->map(function ($handle) use ($collection, $site, $blueprint) {
                 return [
                     'handle' => $handle,
                     'name' => Site::get($handle)->name(),
@@ -87,14 +91,17 @@ class EntriesController extends StatamicEntriesController
                     'exists' => false,
                     'published' => false,
                     'url' => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $handle]),
-                    'livePreviewUrl' => $collection->route($handle) ? cp_route('eloquenty.collections.entries.preview.create',
-                        [$collection->handle(), $handle]) : null, // Eloquenty: Use eloquenty route for preview
+                    'livePreviewUrl' => $collection->route($handle) ? cp_route(
+                        'eloquenty.collections.entries.preview.create',
+                        [$collection->handle(), $handle]
+                    ) : null, // Eloquenty: Use eloquenty route for preview
                 ];
             })->all(),
             'revisionsEnabled' => $collection->revisionsEnabled(),
             'breadcrumbs' => $this->breadcrumbs($collection),
             'canManagePublishState' => User::current()->can('publish ' . $collection->handle() . ' entries'),
             'previewTargets' => $collection->previewTargets()->all(),
+            'autosaveInterval' => $collection->autosaveInterval(),
         ];
 
         if ($request->wantsJson()) {
@@ -159,12 +166,14 @@ class EntriesController extends StatamicEntriesController
 
         $blueprint = $entry->blueprint();
 
-        if (! $blueprint) {
-            throw new BlueprintNotFoundException($entry->value('blueprint'), 'collections/'.$collection->handle());
+        if (!$blueprint) {
+            throw new BlueprintNotFoundException($entry->value('blueprint'), 'collections/' . $collection->handle());
         }
 
+        $blueprint->setParent($entry);
+
         if (User::current()->cant('edit-other-authors-entries', [EntryContract::class, $collection, $blueprint])) {
-            $blueprint->ensureFieldHasConfig('author', ['read_only' => true]);
+            $blueprint->ensureFieldHasConfig('author', ['visibility' => 'read_only']);
         }
 
         [$values, $meta] = $this->extractFromFields($entry, $blueprint);
@@ -194,6 +203,7 @@ class EntriesController extends StatamicEntriesController
             'readOnly' => User::current()->cant('edit', $entry),
             'locale' => $entry->locale(),
             'localizedFields' => $entry->data()->keys()->all(),
+            'originBehavior' => $collection->originBehavior(),
             'isRoot' => $entry->isRoot(),
             'hasOrigin' => $hasOrigin,
             'originValues' => $originValues ?? null,
@@ -222,6 +232,7 @@ class EntriesController extends StatamicEntriesController
             'breadcrumbs' => $this->breadcrumbs($collection),
             'canManagePublishState' => User::current()->can('publish', $entry),
             'previewTargets' => $collection->previewTargets()->all(),
+            'autosaveInterval' => $collection->autosaveInterval(),
         ];
 
         if ($request->wantsJson()) {
@@ -233,9 +244,12 @@ class EntriesController extends StatamicEntriesController
         }
 
         // Eloquenty: Use eloquenty view
-        return view('eloquenty::entries.edit', array_merge($viewData, [
-            'entry' => $entry,
-        ]));
+        return view(
+            'eloquenty::entries.edit',
+            array_merge($viewData, [
+                'entry' => $entry,
+            ])
+        );
     }
 
     public function update(Request $request, $collection, $entry)

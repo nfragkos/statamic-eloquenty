@@ -12,6 +12,7 @@ use Statamic\Facades\User;
 use Statamic\Http\Controllers\CP\Collections\EntriesController as StatamicEntriesController;
 use Statamic\Http\Resources\CP\Entries\Entry as EntryResource;
 use Statamic\Query\Scopes\Filters\Concerns\QueriesFilters;
+use Carbon\Carbon;
 
 class EntriesController extends StatamicEntriesController
 {
@@ -118,7 +119,13 @@ class EntriesController extends StatamicEntriesController
 
         $blueprint = $collection->entryBlueprint($request->_blueprint);
 
-        $fields = $blueprint->fields()->addValues($request->all());
+        $input = $request->all();
+
+        if (! isset($input['date']['time'])){
+            $input['date']['time'] = null;
+        }
+
+        $fields = $blueprint->fields()->addValues($input);
 
         $fields->validate(\Statamic\Facades\Entry::createRules($collection, $site));
 
@@ -134,7 +141,7 @@ class EntriesController extends StatamicEntriesController
             ->data($values);
 
         if ($collection->dated()) {
-            $entry->date($this->toCarbonInstanceForSaving($request->date));
+            $entry->date(Carbon::parse($request->date['date']));
         }
 
         // Eloquenty: Structures are disabled for eloquenty collections
@@ -282,7 +289,7 @@ class EntriesController extends StatamicEntriesController
         $entry->slug($request->slug);
 
         if ($entry->collection()->dated()) {
-            $entry->date($this->toCarbonInstanceForSaving($request->date));
+            $entry->date(Carbon::parse($request->date['date']));
         }
 
         // Eloquenty: Structures are disabled for eloquenty collections

@@ -12,6 +12,7 @@ use Eloquenty\Fieldtypes\EloquentyEntries;
 use Eloquenty\Helpers\Eloquenty as EloquentyHelper;
 use Eloquenty\Http\Middleware\EloquentyMiddleware;
 use Eloquenty\Listeners\UpdateEntriesUri;
+use Eloquenty\Providers\EventServiceProvider;
 use Eloquenty\Providers\RouteServiceProvider;
 use Eloquenty\Tags\Collection as CollectionTag;
 use Statamic\Contracts\Entries\CollectionRepository as CollectionRepositoryContract;
@@ -96,6 +97,7 @@ class ServiceProvider extends AddonServiceProvider
     private function registerServiceProviders(): void
     {
         $this->app->register(RouteServiceProvider::class);
+        $this->app->register(EventServiceProvider::class);
     }
 
     public function register()

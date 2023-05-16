@@ -45,9 +45,9 @@ class ServiceProvider extends AddonServiceProvider
         CollectionTag::class,
     ];
 
-    public function boot()
+    public function bootAddon()
     {
-        parent::boot();
+        parent::bootAddon();
 
         $this->loadViewsFrom(__DIR__ . '/../resources/views/', 'eloquenty');
         $this->mergeConfigFrom(__DIR__ . '/../config/eloquenty.php', 'eloquenty');

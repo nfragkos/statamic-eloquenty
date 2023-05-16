@@ -21,6 +21,6 @@ foreach (Eloquenty::collections() as $handle) {
         $route = StaticStringy::ensureLeft($route, '/');
         $uri = StaticStringy::ensureLeft($route, $siteUrl);
 
-        Route::get($uri, 'FrontendController@index');
+        Route::get($uri, 'Eloquenty\Http\Controllers\FrontendController@index');
     }
 }

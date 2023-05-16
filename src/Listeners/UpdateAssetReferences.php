@@ -33,19 +33,27 @@ class UpdateAssetReferences extends Subscriber implements ShouldQueue
             return;
         }
 
-        $results = Eloquenty::repository()->query()->get();
+        $offset = 0;
+        $perPage = 300;
+        $count = Eloquenty::repository()->query()->count();
 
-        foreach ($results as $result) {
-            $entryData = $result->data()->toArray();
+        while ($offset < $count - 1) {
+            $results = Eloquenty::repository()->query()->offset($offset)->limit($perPage)->get();
 
-            foreach ($entryData as $key => $value) {
-                if ($value === $originalPath) {
-                    $result->set($key, $newPath);
-                    $result->saveQuietly();
+            foreach ($results as $result) {
+                $entryData = $result->data()->toArray();
 
-                    AssetReferencesUpdated::dispatch($asset);
+                foreach ($entryData as $key => $value) {
+                    if ($value === $originalPath) {
+                        $result->set($key, $newPath);
+                        $result->saveQuietly();
+
+                        AssetReferencesUpdated::dispatch($asset);
+                    }
                 }
             }
+
+            $offset += $perPage;
         }
     }
 

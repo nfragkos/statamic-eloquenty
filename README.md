@@ -8,8 +8,8 @@ This package allows you to store entries for specific collections to the databas
 
 ## Requirements
 
-- PHP 7.4+
-- Statamic v3
+- PHP 8+
+- Statamic v4
 
 ## How it works
 

@@ -2,6 +2,15 @@
 
 All notable changes will be documented in this file.
 
+## 2.0.0-beta.1 - 2023-05-17
+
+- Statamic v4 support
+- Added asset references update for db entries (can be turned off via config option: 'update_references' => false)
+
+## 1.3.2 - 2023-04-28
+
+- Fixes for entries create and edit (default values, permissions, autosave)
+
 ## 1.3.1 - 2022-10-30
 
 - Fixed EntryModel to keep the id if it is defined on creating event (fixes import command)

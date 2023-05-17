@@ -3,7 +3,10 @@
 namespace Eloquenty\Http\Controllers;
 
 use Eloquenty\Entries\Entry;
+use Eloquenty\Entries\EntryRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\CP\Breadcrumbs;
 use Statamic\Exceptions\BlueprintNotFoundException;
@@ -12,6 +15,8 @@ use Statamic\Facades\User;
 use Statamic\Http\Controllers\CP\Collections\EntriesController as StatamicEntriesController;
 use Statamic\Http\Resources\CP\Entries\Entry as EntryResource;
 use Statamic\Query\Scopes\Filters\Concerns\QueriesFilters;
+use Statamic\Support\Arr;
+use Statamic\Support\Str;
 
 class EntriesController extends StatamicEntriesController
 {
@@ -65,12 +70,8 @@ class EntriesController extends StatamicEntriesController
             'published' => $collection->defaultPublishState(),
         ])->merge($fields->values());
 
-        if ($collection->dated()) {
-            $values['date'] = substr(now()->toDateTimeString(), 0, 10);
-        }
-
         $viewData = [
-            'title' => __('Create Entry'),
+            'title' => $collection->createLabel(),
             'actions' => [
                 // Eloquenty: Use eloquenty route for store
                 'save' => cp_route('eloquenty.collections.entries.store', [$collection->handle(), $site->handle()]),
@@ -118,11 +119,26 @@ class EntriesController extends StatamicEntriesController
 
         $blueprint = $collection->entryBlueprint($request->_blueprint);
 
-        $fields = $blueprint->fields()->addValues($request->all());
+        $data = $request->all();
 
-        $fields->validate(\Statamic\Facades\Entry::createRules($collection, $site));
+        if (User::current()->cant('edit-other-authors-entries', [EntryContract::class, $collection, $blueprint])) {
+            $data['author'] = [User::current()->id()];
+        }
 
-        $values = $fields->process()->values()->except(['slug', 'date', 'blueprint']);
+        $fields = $blueprint
+            ->ensureField('published', ['type' => 'toggle'])
+            ->fields()
+            ->addValues($data);
+
+        $fields
+            ->validator()
+            ->withRules(\Statamic\Facades\Entry::createRules($collection, $site))
+            ->withReplacements([
+                'collection' => $collection->handle(),
+                'site' => $site->handle(),
+            ])->validate();
+
+        $values = $fields->process()->values()->except(['slug', 'blueprint', 'published']);
 
         // Eloquenty: Create Eloquenty Entry
         $entry = app(Entry::class)
@@ -134,17 +150,27 @@ class EntriesController extends StatamicEntriesController
             ->data($values);
 
         if ($collection->dated()) {
-            $entry->date($this->toCarbonInstanceForSaving($request->date));
+            $entry->date(Carbon::parse($request->date['date'] . ' ' . ($request->date['time'] ?? '')));
         }
 
+        $entry->data($values);
+
         // Eloquenty: Structures are disabled for eloquenty collections
-        //if (($structure = $collection->structure()) && ! $collection->orderable()) {
+        //if ($structure = $collection->structure()) {
         //    $tree = $structure->in($site->handle());
+        //}
+        //if ($structure && ! $collection->orderable()) {
         //    $parent = $values['parent'] ?? null;
         //    $entry->afterSave(function ($entry) use ($parent, $tree) {
+        //        if ($parent && optional($tree->find($parent))->isRoot()) {
+        //            $parent = null;
+        //        }
+        //
         //        $tree->appendTo($parent, $entry)->save();
         //    });
         //}
+
+        $this->validateUniqueUri($entry, $tree ?? null, $parent ?? null);
 
         if ($entry->revisionsEnabled()) {
             $entry->store([
@@ -258,20 +284,43 @@ class EntriesController extends StatamicEntriesController
 
         $entry = $entry->fromWorkingCopy();
 
-        $fields = $entry->blueprint()->fields()->addValues($request->except('id'));
+        $blueprint = $entry->blueprint();
 
-        $fields->validate(\Statamic\Facades\Entry::updateRules($collection, $entry));
+        $data = $request->except('id');
+
+        if (User::current()->cant('edit-other-authors-entries', [EntryContract::class, $collection, $blueprint])) {
+            $data['author'] = Arr::wrap($entry->value('author'));
+        }
+
+        $fields = $entry
+            ->blueprint()
+            ->ensureField('published', ['type' => 'toggle'])
+            ->fields()
+            ->addValues($data);
+
+        $fields
+            ->validator()
+            ->withRules(\Statamic\Facades\Entry::updateRules($collection, $entry))
+            ->withReplacements([
+                'id' => $entry->id(),
+                'collection' => $collection->handle(),
+                'site' => $entry->locale(),
+            ])->validate();
 
         $values = $fields->process()->values();
+
+        // Eloquenty: Structures are disabled for eloquenty collections
+        //$parent = $values->pull('parent');
 
         if ($explicitBlueprint = $values->pull('blueprint')) {
             $entry->blueprint($explicitBlueprint);
         }
 
-        $values = $values->except(['slug', 'date']);
+        $values = $values->except(['slug', 'published']);
 
-        // Eloquenty: Structures are disabled for eloquenty collections
-        //$parent = $values->pull('parent');
+        if ($entry->collection()->dated()) {
+            $entry->date($entry->blueprint()->field('date')->fieldtype()->augment($values->pull('date')));
+        }
 
         if ($entry->hasOrigin()) {
             $entry->data($values->only($request->input('_localized')));
@@ -279,21 +328,27 @@ class EntriesController extends StatamicEntriesController
             $entry->merge($values);
         }
 
-        $entry->slug($request->slug);
-
-        if ($entry->collection()->dated()) {
-            $entry->date($this->toCarbonInstanceForSaving($request->date));
-        }
+        $entry->slug($this->resolveSlug($request));
 
         // Eloquenty: Structures are disabled for eloquenty collections
-        //if ($collection->structure() && ! $collection->orderable()) {
-        //    $entry->afterSave(function ($entry) use ($parent) {
-        //        $entry->structure()
-        //            ->in($entry->locale())
+        //if ($structure = $collection->structure()) {
+        //$tree = $entry->structure()->in($entry->locale());
+        //}
+        //if ($structure && ! $collection->orderable()) {
+        //    $this->validateParent($entry, $tree, $parent);
+        //
+        //    $entry->afterSave(function ($entry) use ($parent, $tree) {
+        //        if ($parent && optional($tree->find($parent))->isRoot()) {
+        //            $parent = null;
+        //        }
+        //
+        //        $tree
         //            ->move($entry->id(), $parent)
         //            ->save();
         //    });
         //}
+
+        $this->validateUniqueUri($entry, $tree ?? null, $parent ?? null);
 
         if ($entry->revisionsEnabled() && $entry->published()) {
             $entry
@@ -308,7 +363,68 @@ class EntriesController extends StatamicEntriesController
             $entry->updateLastModified(User::current())->save();
         }
 
-        return new EntryResource($entry);
+        [$values] = $this->extractFromFields($entry, $blueprint);
+
+        return (new EntryResource($entry->fresh()))
+            ->additional([
+                'data' => [
+                    'values' => $values,
+                ],
+            ]);
+    }
+
+    private function resolveSlug($request)
+    {
+        return function ($entry) use ($request) {
+            if ($request->slug) {
+                return $request->slug;
+            }
+
+            if ($entry->blueprint()->hasField('slug')) {
+                return Str::slug($request->title ?? $entry->autoGeneratedTitle(), '-', $entry->site()->lang());
+            }
+
+            return null;
+        };
+    }
+
+    private function validateUniqueUri($entry, $tree, $parent)
+    {
+        if (!$uri = $this->entryUri($entry, $tree, $parent)) {
+            return;
+        }
+
+        // Eloquenty: Use Eloquenty repository
+        $existing = app(EntryRepository::class)->findByUri($uri, $entry->locale());
+
+        if (!$existing || $existing->id() === $entry->id()) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['slug' => __('statamic::validation.unique_uri')]);
+    }
+
+    private function entryUri($entry, $tree, $parent)
+    {
+        if (!$entry->route()) {
+            return null;
+        }
+
+        if (!$tree) {
+            return $entry->uri();
+        }
+
+        $parent = $parent ? $tree->find($parent) : null;
+
+        return app(\Statamic\Contracts\Routing\UrlBuilder::class)
+            ->content($entry)
+            ->merge([
+                'parent_uri' => $parent ? $parent->uri() : null,
+                'slug' => $entry->slug(),
+                // 'depth' => '', // todo
+                'is_root' => false,
+            ])
+            ->build($entry->route());
     }
 
     protected function breadcrumbs($collection)

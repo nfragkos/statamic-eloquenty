@@ -3,7 +3,9 @@
 namespace Eloquenty\Entries;
 
 use Exception;
-use Illuminate\Database\Eloquent\Model as Eloquent;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
 use Statamic\Events\EntrySaved;
@@ -16,17 +18,27 @@ class Entry extends FileEntry
 {
     protected $model;
 
-    public static function fromModel(Eloquent $model)
+    public static function fromModel(Model $model)
     {
-        return (new static)
+        $entry = (new static)
+            ->origin($model->origin_id)
             ->locale($model->site)
             ->slug($model->slug)
-            ->date($model->date)
             ->collection($model->collection)
             ->data($model->data)
             ->blueprint($model->data['blueprint'] ?? null)
             ->published($model->published)
             ->model($model);
+
+        if ($model->date && $entry->collection()->dated()) {
+            $entry->date($model->date);
+        }
+
+        if (config('statamic.system.track_last_update')) {
+            $entry->set('updated_at', $model->updated_at ?? $model->created_at);
+        }
+
+        return $entry;
     }
 
     public function toModel()
@@ -37,18 +49,26 @@ class Entry extends FileEntry
             $data['blueprint'] = $this->blueprint;
         }
 
-        //Eloquenty: Use eloquenty entry model
-        return EntryModel:: findOrNew($this->id())->fill([
-            'origin_id' => $this->originId(),
+        $attributes = [
+            'origin_id' => $this->origin()?->id(),
             'site' => $this->locale(),
             'slug' => $this->slug(),
             'uri' => $this->uri(),
             'date' => $this->hasDate() ? $this->date() : null,
             'collection' => $this->collectionHandle(),
-            'data' => $data,
+            'data' => $data->except(EntryQueryBuilder::COLUMNS),
             'published' => $this->published(),
             'status' => $this->status(),
-        ]);
+            'updated_at' => $this->lastModified(),
+            //'order'      => $this->order(), // Eloquenty: we dont have this yet
+        ];
+
+        if ($id = $this->id()) {
+            $attributes['id'] = $id;
+        }
+
+        //Eloquenty: Use eloquenty entry model
+        return EntryModel::findOrNew($this->id())->fill($attributes);
     }
 
     public function model($model = null)
@@ -62,6 +82,16 @@ class Entry extends FileEntry
         $this->id($model->id);
 
         return $this;
+    }
+
+    public function fileLastModified()
+    {
+        return $this->model?->updated_at ?? Carbon::now();
+    }
+
+    public function lastModified()
+    {
+        return $this->fileLastModified();
     }
 
     public function origin($origin = null)
@@ -78,25 +108,24 @@ class Entry extends FileEntry
         }
 
         if ($this->origin) {
+            if (!$this->origin instanceof EntryContract) {
+                if ($model = EntryModel::find($this->origin)) {
+                    $this->origin = self::fromModel($model);
+                }
+            }
+
             return $this->origin;
         }
 
-        // Eloquenty: Fix error when model is null
-        if (!isset($this->model) || !$this->model->origin) {
-            return null;
+        if (!$this->model?->origin_id) {
+            return;
         }
 
-        return self::fromModel($this->model->origin);
-    }
+        if ($model = EntryModel::find($this->model->origin_id)) {
+            $this->origin = self::fromModel($model);
+        }
 
-    public function originId()
-    {
-        return optional($this->origin)->id() ?? optional($this->model)->origin_id;
-    }
-
-    public function hasOrigin()
-    {
-        return $this->originId() !== null;
+        return $this->origin ?? null;
     }
 
     // Eloquenty: Fix delete entry
@@ -279,5 +308,11 @@ class Entry extends FileEntry
     {
         // return $this->collection()->hasStructure();
         return false;
+    }
+
+    // Eloquenty: Use Eloquenty repository
+    public function fresh()
+    {
+        return app(EntryRepository::class)->find($this->id);
     }
 }

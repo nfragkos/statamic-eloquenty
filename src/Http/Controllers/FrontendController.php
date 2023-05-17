@@ -4,11 +4,11 @@ namespace Eloquenty\Http\Controllers;
 
 use Eloquenty\Entries\EntryRepository;
 use Illuminate\Http\Request;
+use Statamic\Auth\Protect\Protection;
 use Statamic\Exceptions\NotFoundHttpException;
 use Statamic\Facades\Data;
 use Statamic\Facades\Site;
 use Statamic\Http\Controllers\FrontendController as StatamicFrontendController;
-use Statamic\Statamic;
 use Statamic\Support\Str;
 
 /**
@@ -31,10 +31,6 @@ class FrontendController extends StatamicFrontendController
             $url = '/';
         }
 
-        if (Statamic::isAmpRequest()) {
-            $url = str_after($url, '/' . config('statamic.amp.route'));
-        }
-
         if (Str::contains($url, '?')) {
             $url = substr($url, 0, strpos($url, '?'));
         }
@@ -42,6 +38,8 @@ class FrontendController extends StatamicFrontendController
         if ($data = Data::findByRequestUrl($request->url())) {
             return $data;
         }
+
+        app(Protection::class)->protect();
 
         // Eloquenty: Use Eloquenty EntryRepository to find an entry that matches current uri
         if ($entry = app(EntryRepository::class)->query()

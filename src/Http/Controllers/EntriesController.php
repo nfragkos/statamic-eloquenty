@@ -150,7 +150,7 @@ class EntriesController extends StatamicEntriesController
             ->data($values);
 
         if ($collection->dated()) {
-            $entry->date(Carbon::parse($request->date['date']));
+            $entry->date(Carbon::parse($request->date['date'] . ' ' . ($request->date['time'] ?? '')));
         }
 
         $entry->data($values);

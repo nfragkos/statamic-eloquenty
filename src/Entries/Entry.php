@@ -5,7 +5,9 @@ namespace Eloquenty\Entries;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Statamic\Contracts\Data\Augmented;
 use Statamic\Contracts\Entries\Entry as EntryContract;
+use Statamic\Entries\AugmentedEntry;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
 use Statamic\Events\EntrySaved;
@@ -271,6 +273,14 @@ class Entry extends FileEntry
         }
 
         return true;
+    }
+
+    public function newAugmentedInstance(): Augmented
+    {
+        // Eloquenty: ensure taxonomies are augmented
+        $this->taxonomize();
+
+        return new AugmentedEntry($this);
     }
 
     // Eloquenty: Use Eloquenty Entry when making localization

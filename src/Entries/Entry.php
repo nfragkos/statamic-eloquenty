@@ -2,14 +2,14 @@
 
 namespace Eloquenty\Entries;
 
+use Eloquenty\Facades\EloquentyEntry as EntryFacade;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Statamic\Contracts\Data\Augmented;
 use Statamic\Contracts\Entries\Entry as EntryContract;
-use Statamic\Entries\AugmentedEntry;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
+use Statamic\Events\EntryDeleted;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
 
@@ -101,19 +101,12 @@ class Entry extends FileEntry
         if (func_num_args() > 0) {
             $this->origin = $origin;
 
-            // Eloquenty: Fix when detaching descendants
-            if ($this->model) {
-                $this->model->origin_id = $origin ? $origin->id() : null;
-            }
-
             return $this;
         }
 
         if ($this->origin) {
             if (!$this->origin instanceof EntryContract) {
-                if ($model = EntryModel::find($this->origin)) {
-                    $this->origin = self::fromModel($model);
-                }
+                $this->origin = EntryFacade::find($this->origin);
             }
 
             return $this->origin;
@@ -123,11 +116,7 @@ class Entry extends FileEntry
             return;
         }
 
-        if ($model = EntryModel::find($this->model->origin_id)) {
-            $this->origin = self::fromModel($model);
-        }
-
-        return $this->origin ?? null;
+        return EntryFacade::find($this->model->origin_id);
     }
 
     // Eloquenty: Fix delete entry
@@ -153,9 +142,9 @@ class Entry extends FileEntry
         //    })->save();
         //}
 
-        app(EntryRepository::class)->delete($this);
+        EntryFacade::delete($this);
 
-        //EntryDeleted::dispatch($this);
+        EntryDeleted::dispatch($this);
 
         return true;
     }
@@ -163,7 +152,7 @@ class Entry extends FileEntry
     // Eloquenty: Fix detach entry localizations
     public function detachLocalizations()
     {
-        app(EntryRepository::class)->query()
+        EntryFacade::query()
             ->where('collection', $this->collectionHandle())
             ->where('origin', $this->id())
             ->get()
@@ -231,7 +220,7 @@ class Entry extends FileEntry
     public function save()
     {
         //$isNew = is_null(Facades\Entry::find($this->id()));
-        $isNew = is_null(app(EntryRepository::class)->find($this->id()));
+        $isNew = is_null(EntryFacade::find($this->id()));
 
         $afterSaveCallbacks = $this->afterSaveCallbacks;
         $this->afterSaveCallbacks = [];
@@ -248,15 +237,15 @@ class Entry extends FileEntry
         $this->slug($this->slug());
 
         //Facades\Entry::save($this);
-        app(EntryRepository::class)->save($this);
+        EntryFacade::save($this);
 
         //if ($this->id()) {
         //    Blink::store('structure-page-entries')->forget($this->id());
         //    Blink::store('structure-uris')->forget($this->id());
         //    Blink::store('structure-entries')->flush();
         //}
-        //
-        //$this->taxonomize();
+
+        $this->taxonomize();
 
         optional(Collection::findByMount($this))->updateEntryUris();
 
@@ -275,14 +264,6 @@ class Entry extends FileEntry
         return true;
     }
 
-    public function newAugmentedInstance(): Augmented
-    {
-        // Eloquenty: ensure taxonomies are augmented
-        $this->taxonomize();
-
-        return new AugmentedEntry($this);
-    }
-
     // Eloquenty: Use Eloquenty Entry when making localization
     public function makeLocalization($site)
     {
@@ -298,7 +279,7 @@ class Entry extends FileEntry
     public function descendants()
     {
         if (!$this->localizations) {
-            $this->localizations = app(EntryRepository::class)->query()
+            $this->localizations = EntryFacade::query()
                 ->where('collection', $this->collectionHandle())
                 ->where('origin', $this->id())->get()
                 ->keyBy->locale();
@@ -323,6 +304,16 @@ class Entry extends FileEntry
     // Eloquenty: Use Eloquenty repository
     public function fresh()
     {
-        return app(EntryRepository::class)->find($this->id);
+        return EntryFacade::find($this->id);
+    }
+
+    public static function __callStatic($method, $parameters)
+    {
+        return EntryFacade::{$method}(...$parameters);
+    }
+
+    protected function getOriginByString($origin)
+    {
+        return EntryFacade::find($origin);
     }
 }

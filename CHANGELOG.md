@@ -2,6 +2,15 @@
 
 All notable changes will be documented in this file.
 
+## 2.0.0 - 2023-06-16
+
+- Added eloquenty:terms-associate command to fix augmentation for taxonomies
+- Added EloquentyEntry Facade
+
+## 2.0.0-beta.2 - 2023-05-17
+
+- Eloquenty entries field fixes
+
 ## 2.0.0-beta.1 - 2023-05-17
 
 - Statamic v4 support

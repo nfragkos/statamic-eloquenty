@@ -102,7 +102,17 @@ Eloquenty\Facades\Eloquenty::repository()
 **Keep in mind that calling the whereCollection() method will fetch all entries in the table. You should use the query() method 
 instead that returns the query builder instance to build your query.**
 
-## Changelog
+### Taxonomy Associations
+
+Taxonomy associations for Eloquenty entries are only created on demand with the command:
+
+```
+eloquenty:terms-associate
+```
+
+**This command should be called after stache:warm/refresh. If associations are missing taxonomy terms will not be augmented in Antlers/Blade.**
+
+## Changelog2
 
 Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
 

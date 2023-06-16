@@ -89,30 +89,22 @@ In Antlers templates use the `eloquenty` tag instead of the collection tag for E
 
 ### Data retrieval and manipulation
 
-Calling the queryEloquentyEntries() method of Collection repository (**not the existing queryEntries() method**), will return the 
-correct QueryBuilder for Eloquenty collections:
+Calling the queryEntries() method of Collection repository, will return the correct QueryBuilder for Eloquenty collections:
 ```
-\Statamic\Facades\Collection::find('blog')->queryEloquentyEntries()
+\Statamic\Facades\Collection::find('blog')->queryEntries()
 ```
-Alternatively you can use the Eloquenty's Facade repository() method to retrieve the instance of EntryRepository 
+Alternatively you can use the Facade ***Eloquenty::repository()*** method or ***EloquentyEntry::query()*** to retrieve the instance of EntryRepository 
 (implements `Statamic\Contracts\Entries\EntryRepository`):
 ```
 Eloquenty\Facades\Eloquenty::repository()
 ```
+```
+Eloquenty\Facades\EloquentyEntry::query()
+```
 **Keep in mind that calling the whereCollection() method will fetch all entries in the table. You should use the query() method 
 instead that returns the query builder instance to build your query.**
 
-### Taxonomy Associations
-
-Taxonomy associations for Eloquenty entries are only created on demand with the command:
-
-```
-eloquenty:terms-associate
-```
-
-**This command should be called after stache:warm/refresh. If associations are missing taxonomy terms will not be augmented in Antlers/Blade.**
-
-## Changelog2
+## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
 

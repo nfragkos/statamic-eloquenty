@@ -3,7 +3,6 @@
 namespace Eloquenty;
 
 use Eloquenty\Commands\ImportEntries;
-use Eloquenty\Commands\TermAssociations;
 use Eloquenty\Entries\CollectionRepository;
 use Eloquenty\Entries\EntryModel;
 use Eloquenty\Entries\EntryQueryBuilder;
@@ -72,7 +71,6 @@ class ServiceProvider extends AddonServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ImportEntries::class,
-                TermAssociations::class,
             ]);
         }
     }

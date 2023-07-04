@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 2.0.0-beta.4 - 2023-07-04
+
+- Laravel 10 support
+
 ## 2.0.0-beta.3 - 2023-06-16
 
 - Collection queryEntries() method will now return the correct query builder for eloquenty collections.

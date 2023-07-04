@@ -2,9 +2,13 @@
 
 All notable changes will be documented in this file.
 
-## 2.0.0-beta.4 - 2023-07-04
+## 2.0.0-beta.5 - 2023-07-04
 
 - Laravel 10 support
+
+## 2.0.0-beta.4 - 2023-06-19
+
+- Minor bug fixes (thanks @Kakoushias )
 
 ## 2.0.0-beta.3 - 2023-06-16
 

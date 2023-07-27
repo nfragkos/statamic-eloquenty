@@ -27,6 +27,6 @@
     "require": {
         "php": "^8.0",
         "laravel/framework": "^9.0|^10.0",
-        "statamic/cms": "^v4.0"
+        "statamic/cms": "^4.13.1"
     }
 }

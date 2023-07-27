@@ -2,6 +2,11 @@
 
 All notable changes will be documented in this file.
 
+## 2.0.0 - 2023-07-27
+
+- Changes for Statamic v4.13.1+
+- Stable release
+
 ## 2.0.0-beta.5 - 2023-07-04
 
 - Laravel 10 support

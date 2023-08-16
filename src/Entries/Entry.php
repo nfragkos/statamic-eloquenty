@@ -3,7 +3,6 @@
 namespace Eloquenty\Entries;
 
 use Eloquenty\Facades\EloquentyEntry as EntryFacade;
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Statamic\Contracts\Entries\Entry as EntryContract;
@@ -12,6 +11,8 @@ use Statamic\Events\EntryCreated;
 use Statamic\Events\EntryDeleted;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
+use Statamic\Facades\Blink;
+use Statamic\Facades\Collection;
 
 /**
  * Eloquenty: From Statamic Eloquent Driver with modifications.
@@ -123,7 +124,7 @@ class Entry extends FileEntry
     public function delete()
     {
         if ($this->descendants()->map->fresh()->filter()->isNotEmpty()) {
-            throw new Exception('Cannot delete an entry with localizations.');
+            throw new \Exception('Cannot delete an entry with localizations.');
         }
 
         //if ($this->hasStructure()) {
@@ -138,8 +139,8 @@ class Entry extends FileEntry
         //                $tree->move($child->id(), optional($parent)->id());
         //            });
         //            $tree->remove($this);
-        //        });
-        //    })->save();
+        //        })->save();
+        //    });
         //}
 
         EntryFacade::delete($this);
@@ -222,9 +223,13 @@ class Entry extends FileEntry
         //$isNew = is_null(Facades\Entry::find($this->id()));
         $isNew = is_null(EntryFacade::find($this->id()));
 
+        $withEvents = $this->withEvents;
+        $this->withEvents = true;
+
         $afterSaveCallbacks = $this->afterSaveCallbacks;
         $this->afterSaveCallbacks = [];
-        if ($this->withEvents) {
+
+        if ($withEvents) {
             if (EntrySaving::dispatch($this) === false) {
                 return false;
             }
@@ -239,11 +244,15 @@ class Entry extends FileEntry
         //Facades\Entry::save($this);
         EntryFacade::save($this);
 
-        //if ($this->id()) {
-        //    Blink::store('structure-page-entries')->forget($this->id());
-        //    Blink::store('structure-uris')->forget($this->id());
-        //    Blink::store('structure-entries')->flush();
-        //}
+        if ($this->id()) {
+            Blink::store('structure-uris')->forget($this->id());
+            Blink::store('structure-entries')->forget($this->id());
+            Blink::forget($this->getOriginBlinkKey());
+        }
+
+        $this->ancestors()->each(fn ($entry) => Blink::forget('entry-descendants-'.$entry->id()));
+
+        $this->directDescendants()->each->save();
 
         $this->taxonomize();
 
@@ -253,12 +262,20 @@ class Entry extends FileEntry
             $callback($this);
         }
 
-        if ($this->withEvents) {
+        if ($withEvents) {
             if ($isNew) {
                 EntryCreated::dispatch($this);
             }
 
             EntrySaved::dispatch($this);
+        }
+
+        if ($isNew && ! $this->hasOrigin() && $this->collection()->propagate()) {
+            $this->collection()->sites()
+                ->reject($this->site()->handle())
+                ->each(function ($siteHandle) {
+                    $this->makeLocalization($siteHandle)->save();
+                });
         }
 
         return true;
@@ -271,27 +288,25 @@ class Entry extends FileEntry
             ->collection($this->collection)
             ->origin($this)
             ->locale($site)
-            ->slug($this->slug())
-            ->date($this->date());
+            ->published($this->published)
+            ->slug($this->slug());
+
+        if ($this->collection()->dated()) {
+            $localization->date($this->date());
+        }
+
+        return $localization;
     }
 
     // Eloquenty: Use Eloquenty EntryRepository for finding entry descendants
-    public function descendants()
+    public function directDescendants()
     {
-        if (!$this->localizations) {
-            $this->localizations = EntryFacade::query()
+        return Blink::once('entry-descendants-' . $this->id(), function () {
+            return EntryFacade::query()
                 ->where('collection', $this->collectionHandle())
                 ->where('origin', $this->id())->get()
                 ->keyBy->locale();
-        }
-
-        $localizations = collect($this->localizations);
-
-        foreach ($localizations as $loc) {
-            $localizations = $localizations->merge($loc->descendants());
-        }
-
-        return $localizations;
+        });
     }
 
     // Eloquenty: Structures are disabled for eloquenty collections

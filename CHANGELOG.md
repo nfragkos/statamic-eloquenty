@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 2.0.2 - 2023-08-16
+
+- Statamic v4.16 compatibility fixes
+
 ## 2.0.1 - 2023-07-31
 
 - Fix Create not saving the entries with Eloquenty

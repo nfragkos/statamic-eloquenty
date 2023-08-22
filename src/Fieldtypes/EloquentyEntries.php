@@ -53,6 +53,11 @@ class EloquentyEntries extends Entries
                             return [$item->handle() => $item->title()];
                         })->all(),
                     ],
+                    'query_scopes' => [
+                        'display' => __('Query Scopes'),
+                        'instructions' => __('statamic::fieldtypes.entries.config.query_scopes'),
+                        'type' => 'taggable',
+                    ],
                 ],
             ],
         ];
@@ -64,7 +69,20 @@ class EloquentyEntries extends Entries
         $query = Eloquenty::repository()->query();
 
         if ($search = $request->search) {
-            $query->where('title', 'like', '%' . $search . '%');
+            $usingSearchIndex = false;
+            $collections = collect($this->getConfiguredCollections());
+
+            if ($collections->count() == 1) {
+                $collection = Collection::findByHandle($collections->first());
+                if ($collection && $collection->hasSearchIndex()) {
+                    $query = $collection->searchIndex()->ensureExists()->search($search);
+                    $usingSearchIndex = true;
+                }
+            }
+
+            if (!$usingSearchIndex) {
+                $query->where('title', 'like', '%' . $search . '%');
+            }
         }
 
         if ($site = $request->site) {
@@ -74,6 +92,8 @@ class EloquentyEntries extends Entries
         if ($request->exclusions) {
             $query->whereNotIn('id', $request->exclusions);
         }
+
+        $this->applyIndexQueryScopes($query, $request->all());
 
         return $query;
     }

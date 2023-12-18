@@ -17,6 +17,7 @@
         :initial-localized-fields="{{ json_encode($localizedFields) }}"
         :initial-meta="{{ json_encode($meta) }}"
         initial-permalink="{{ $permalink }}"
+        origin-behavior="{{ $originBehavior }}"
         :initial-localizations="{{ json_encode($localizations) }}"
         :initial-has-origin="{{ $str::bool($hasOrigin) }}"
         :initial-origin-values="{{ json_encode($originValues) }}"
@@ -31,7 +32,8 @@
         :can-edit-blueprint="{{ $str::bool(Auth::user()->can('configure fields')) }}"
         :can-manage-publish-state="{{ $str::bool($canManagePublishState) }}"
         create-another-url="{{ cp_route('eloquenty.collections.entries.create', [$collection, $locale]) }}"
-        listing-url="{{ cp_route('eloquenty.collections.show', $collection) }}"
+        initial-listing-url="{{ cp_route('eloquenty.collections.show', $collection) }}"
         :preview-targets="{{ json_encode($previewTargets) }}"
+        :autosave-interval="{{ json_encode($autosaveInterval) }}"
     ></entry-publish-form>
 @endsection

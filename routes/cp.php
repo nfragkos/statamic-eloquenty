@@ -43,6 +43,7 @@ Route::prefix('eloquenty/')->name('eloquenty.')->group(function () {
             Route::post('preview', [EntryPreviewController::class, 'edit'])->name('collections.entries.preview.edit');
             Route::get('preview', [EntryPreviewController::class, 'show'])->name('collections.entries.preview.popout');
             Route::patch('/', [EntriesController::class, 'update'])->name('collections.entries.update');
+            Route::get('{slug}', fn ($collection, $entry, $slug) => redirect($entry->editUrl()));
         });
     });
 });

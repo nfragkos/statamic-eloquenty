@@ -11,6 +11,7 @@ use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\CP\Breadcrumbs;
 use Statamic\Exceptions\BlueprintNotFoundException;
 use Statamic\Facades\Site;
+use Statamic\Facades\Stache;
 use Statamic\Facades\User;
 use Statamic\Http\Controllers\CP\Collections\EntriesController as StatamicEntriesController;
 use Statamic\Http\Resources\CP\Entries\Entry as EntryResource;
@@ -84,20 +85,17 @@ class EntriesController extends StatamicEntriesController
             'blueprint' => $blueprint->toPublishArray(),
             'published' => $collection->defaultPublishState(),
             'locale' => $site->handle(),
-            'localizations' => $collection->sites()->map(function ($handle) use ($collection, $site, $blueprint) {
+            'localizations' => $this->getAuthorizedSitesForCollection($collection)->map(function ($handle) use ($collection, $site, $blueprint) {
                 return [
                     'handle' => $handle,
                     'name' => Site::get($handle)->name(),
                     'active' => $handle === $site->handle(),
                     'exists' => false,
                     'published' => false,
-                    'url' => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $handle]),
-                    'livePreviewUrl' => $collection->route($handle) ? cp_route(
-                        'eloquenty.collections.entries.preview.create',
-                        [$collection->handle(), $handle]
-                    ) : null, // Eloquenty: Use eloquenty route for preview
+                    'url' => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $handle, 'blueprint' => $blueprint->handle()]),
+                    'livePreviewUrl' => $collection->route($handle) ? cp_route('eloquenty.collections.entries.preview.create', [$collection->handle(), $handle]) : null, // Eloquenty: Use eloquenty route for preview
                 ];
-            })->all(),
+            })->values()->all(),
             'revisionsEnabled' => $collection->revisionsEnabled(),
             'breadcrumbs' => $this->breadcrumbs($collection),
             'canManagePublishState' => User::current()->can('publish ' . $collection->handle() . ' entries'),
@@ -146,11 +144,10 @@ class EntriesController extends StatamicEntriesController
             ->blueprint($request->_blueprint)
             ->locale($site->handle())
             ->published($request->get('published'))
-            ->slug($request->slug)
-            ->data($values);
+            ->slug($this->resolveSlug($request));
 
         if ($collection->dated()) {
-            $entry->date(Carbon::parse($request->date['date'] . ' ' . ($request->date['time'] ?? '')));
+            $entry->date($blueprint->field('date')->fieldtype()->augment($values->pull('date')));
         }
 
         $entry->data($values);
@@ -173,15 +170,15 @@ class EntriesController extends StatamicEntriesController
         $this->validateUniqueUri($entry, $tree ?? null, $parent ?? null);
 
         if ($entry->revisionsEnabled()) {
-            $entry->store([
+            $saved = $entry->store([
                 'message' => $request->message,
                 'user' => User::current(),
             ]);
         } else {
-            $entry->updateLastModified(User::current())->save();
+            $saved = $entry->updateLastModified(User::current())->save();
         }
 
-        return new EntryResource($entry);
+        return (new EntryResource($entry))->additional(['saved' => $saved]);
     }
 
     public function edit(Request $request, $collection, $entry)
@@ -235,7 +232,7 @@ class EntriesController extends StatamicEntriesController
             'originValues' => $originValues ?? null,
             'originMeta' => $originMeta ?? null,
             'permalink' => $entry->absoluteUrl(),
-            'localizations' => $collection->sites()->map(function ($handle) use ($entry) {
+            'localizations' => $this->getAuthorizedSitesForCollection($collection)->map(function ($handle) use ($entry) {
                 $localized = $entry->in($handle);
                 $exists = $localized !== null;
 
@@ -251,7 +248,7 @@ class EntriesController extends StatamicEntriesController
                     'url' => $exists ? $localized->editUrl() : null,
                     'livePreviewUrl' => $exists ? $localized->livePreviewUrl() : null,
                 ];
-            })->all(),
+            })->values()->all(),
             'hasWorkingCopy' => $entry->hasWorkingCopy(),
             'preloadedAssets' => $this->extractAssetsFromValues($values),
             'revisionsEnabled' => $entry->revisionsEnabled(),
@@ -270,12 +267,9 @@ class EntriesController extends StatamicEntriesController
         }
 
         // Eloquenty: Use eloquenty view
-        return view(
-            'eloquenty::entries.edit',
-            array_merge($viewData, [
-                'entry' => $entry,
-            ])
-        );
+        return view('eloquenty::entries.edit', array_merge($viewData, [
+            'entry' => $entry,
+        ]));
     }
 
     public function update(Request $request, $collection, $entry)
@@ -351,26 +345,29 @@ class EntriesController extends StatamicEntriesController
         $this->validateUniqueUri($entry, $tree ?? null, $parent ?? null);
 
         if ($entry->revisionsEnabled() && $entry->published()) {
-            $entry
+            $saved = $entry
                 ->makeWorkingCopy()
                 ->user(User::current())
                 ->save();
+
+            // catch any changes through RevisionSaving event
+            $entry = $entry->fromWorkingCopy();
         } else {
             if (!$entry->revisionsEnabled() && User::current()->can('publish', $entry)) {
                 $entry->published($request->published);
             }
 
-            $entry->updateLastModified(User::current())->save();
+            $saved = $entry->updateLastModified(User::current())->save();
         }
 
         [$values] = $this->extractFromFields($entry, $blueprint);
 
-        return (new EntryResource($entry->fresh()))
-            ->additional([
-                'data' => [
-                    'values' => $values,
-                ],
-            ]);
+        return (new EntryResource($entry->fresh()))->additional([
+            'saved' => $saved,
+            'data' => [
+                'values' => $values,
+            ],
+        ]);
     }
 
     private function resolveSlug($request)
@@ -411,7 +408,12 @@ class EntriesController extends StatamicEntriesController
         }
 
         if (!$tree) {
-            return $entry->uri();
+            return app(\Statamic\Contracts\Routing\UrlBuilder::class)
+                ->content($entry)
+                ->merge([
+                    'id' => $entry->id() ?? Stache::generateId(),
+                ])
+                ->build($entry->route());
         }
 
         $parent = $parent ? $tree->find($parent) : null;

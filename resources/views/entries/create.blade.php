@@ -1,5 +1,5 @@
 @extends('statamic::layout')
-@section('title', $breadcrumbs->title('Create Entry'))
+@section('title', $breadcrumbs->title($collectionCreateLabel))
 @section('wrapper_class', 'max-w-3xl')
 
 @section('content')
@@ -13,7 +13,7 @@
         :meta="{{ json_encode($meta) }}"
         :published="{{ json_encode($published) }}"
         :localizations="{{ json_encode($localizations) }}"
-        :revisions="false"
+        :revisions="{{ Statamic\Support\Str::bool($revisionsEnabled ) }}"
         :breadcrumbs="{{ $breadcrumbs->toJson() }}"
         site="{{ $locale }}"
         create-another-url="{{ cp_route('eloquenty.collections.entries.create', [$collection, $locale, 'blueprint' => $blueprint['handle']]) }}"

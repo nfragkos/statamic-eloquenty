@@ -86,15 +86,15 @@ class EntriesController extends StatamicEntriesController
             'published' => $collection->defaultPublishState(),
             'locale' => $site->handle(),
             'localizations' => $this->getAuthorizedSitesForCollection($collection)->map(function ($handle) use ($collection, $site, $blueprint) {
-                return [
-                    'handle' => $handle,
-                    'name' => Site::get($handle)->name(),
-                    'active' => $handle === $site->handle(),
-                    'exists' => false,
-                    'published' => false,
+                    return [
+                        'handle' => $handle,
+                        'name' => Site::get($handle)->name(),
+                        'active' => $handle === $site->handle(),
+                        'exists' => false,
+                        'published' => false,
                     'url' => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $handle, 'blueprint' => $blueprint->handle()]),
                     'livePreviewUrl' => $collection->route($handle) ? cp_route('eloquenty.collections.entries.preview.create', [$collection->handle(), $handle]) : null, // Eloquenty: Use eloquenty route for preview
-                ];
+                    ];
             })->values()->all(),
             'revisionsEnabled' => $collection->revisionsEnabled(),
             'breadcrumbs' => $this->breadcrumbs($collection),
@@ -387,46 +387,21 @@ class EntriesController extends StatamicEntriesController
 
     private function validateUniqueUri($entry, $tree, $parent)
     {
-        if (!$uri = $this->entryUri($entry, $tree, $parent)) {
-            return;
-        }
+        //if (!$uri = $this->entryUri($entry, $tree, $parent)) {
+        //    return;
+        //}
 
-        // Eloquenty: Use Eloquenty repository
-        $existing = app(EntryRepository::class)->findByUri($uri, $entry->locale());
+        // Eloquenty: Use Eloquenty repository, check slug and site to be unique
+        $existing = app(EntryRepository::class)->query()
+            ->where('slug', $entry->slug())
+            ->where('site', $entry->locale())
+            ->first();
 
         if (!$existing || $existing->id() === $entry->id()) {
             return;
         }
 
         throw ValidationException::withMessages(['slug' => __('statamic::validation.unique_uri')]);
-    }
-
-    private function entryUri($entry, $tree, $parent)
-    {
-        if (!$entry->route()) {
-            return null;
-        }
-
-        if (!$tree) {
-            return app(\Statamic\Contracts\Routing\UrlBuilder::class)
-                ->content($entry)
-                ->merge([
-                    'id' => $entry->id() ?? Stache::generateId(),
-                ])
-                ->build($entry->route());
-        }
-
-        $parent = $parent ? $tree->find($parent) : null;
-
-        return app(\Statamic\Contracts\Routing\UrlBuilder::class)
-            ->content($entry)
-            ->merge([
-                'parent_uri' => $parent ? $parent->uri() : null,
-                'slug' => $entry->slug(),
-                // 'depth' => '', // todo
-                'is_root' => false,
-            ])
-            ->build($entry->route());
     }
 
     protected function breadcrumbs($collection)

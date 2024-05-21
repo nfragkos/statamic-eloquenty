@@ -4,6 +4,7 @@ namespace Eloquenty\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Eloquenty\Entries\EntryRepository;
+use Illuminate\Support\Str;
 use Statamic\Exceptions\NotFoundHttpException;
 use Statamic\Providers\RouteServiceProvider as StatamicServiceProvider;
 
@@ -13,7 +14,7 @@ class RouteServiceProvider extends StatamicServiceProvider
     {
         // On Eloquenty routes we bind entry with Eloquenty Entry class
         $cpRoute = config('statamic.cp.route', 'cp');
-        if (starts_with(request()->path(), "$cpRoute/eloquenty")) {
+        if (Str::startsWith(request()->path(), "$cpRoute/eloquenty")) {
             Route::bind('entry', function ($handle, $route) {
                 $eloquentyEntry = $this->app[EntryRepository::class];
 

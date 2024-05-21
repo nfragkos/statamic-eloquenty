@@ -12,8 +12,9 @@ class Entries extends StatamicEntries
         $query = app(EntryRepository::class)->query()
             ->whereIn('collection', $this->collections->map->handle()->all());
 
+        $this->querySelect($query);
         $this->querySite($query);
-        $this->queryStatus($query);
+        $this->queryPublished($query);
         $this->queryPastFuture($query);
         $this->querySinceUntil($query);
         $this->queryTaxonomies($query);

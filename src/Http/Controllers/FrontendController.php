@@ -24,7 +24,7 @@ class FrontendController extends StatamicFrontendController
     public function index(Request $request)
     {
         $url = Site::current()->relativePath(
-            str_finish($request->getUri(), '/')
+            Str::finish($request->getUri(), '/')
         );
 
         if ($url === '') {

@@ -2,7 +2,11 @@
 
 All notable changes will be documented in this file.
 
-## 2.0.4 - 2023-02-27
+## 3.0.0 - 2024-05-21
+
+- Statamic v5 support
+  
+## 2.0.4 - 2024-02-27
 
 - fix validateUniqueUri function
 

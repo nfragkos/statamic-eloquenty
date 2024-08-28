@@ -15,7 +15,7 @@ use Statamic\Http\Controllers\CP\Collections\CollectionsController as StatamicCo
 
 class CollectionsController extends StatamicCollectionsController
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('index', CollectionContract::class, __('You are not authorized to view collections.'));
 

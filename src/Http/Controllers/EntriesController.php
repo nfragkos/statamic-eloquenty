@@ -292,7 +292,7 @@ class EntriesController extends StatamicEntriesController
             ->fields()
             ->addValues($data);
 
-        $fields
+            $fields
             ->validator()
             ->withRules(\Statamic\Facades\Entry::updateRules($collection, $entry))
             ->withReplacements([
@@ -390,6 +390,10 @@ class EntriesController extends StatamicEntriesController
         //if (!$uri = $this->entryUri($entry, $tree, $parent)) {
         //    return;
         //}
+
+        // don't validate unique uri if slugs are not required
+        if (! $entry->collection()->requiresSlugs)
+            return;
 
         // Eloquenty: Use Eloquenty repository, check slug and site to be unique
         $existing = app(EntryRepository::class)->query()

@@ -8,7 +8,7 @@
         handle="{{ $collection->handle() }}"
         breadcrumb-url="{{ cp_route('eloquenty.collections.index') }}"
         :can-create="@can("create {$collection->handle()} entries", $collection) true @else false @endcan"
-        create-url="{{ cp_route('eloquenty.collections.entries.create', [$collection->handle(), $site]) }}"
+        :create-urls='@json($createUrls)'
         :blueprints="{{ json_encode($blueprints) }}"
         sort-column="{{ $collection->sortField() }}"
         sort-direction="{{ $collection->sortDirection() }}"

@@ -8,36 +8,59 @@ use Statamic\Facades\Collection;
 use Statamic\Facades\Site;
 use Statamic\Fieldtypes\Entries;
 use Statamic\Http\Resources\CP\Entries\Entry as EntryResource;
+use Statamic\Query\OrderedQueryBuilder;
+use Statamic\Query\StatusQueryBuilder;
+use Statamic\Support\Arr;
 
 class EloquentyEntries extends Entries
 {
     // Eloquenty: Use entries icon
     protected $icon = 'entries';
+    protected $canCreate = false;
 
     protected function configFieldItems(): array
     {
-        return array_merge(parent::configFieldItems(), [
-            'create' => [
-                'display' => __('Allow Creating'),
-                'instructions' => __('statamic::fieldtypes.entries.config.create'),
-                'type' => 'toggle',
-                'default' => false,
-                'width' => 100,
+        return [
+            [
+                'display' => __('Appearance & Behavior'),
+                'fields' => [
+                    'max_items' => [
+                        'display' => __('Max Items'),
+                        'instructions' => __('statamic::messages.max_items_instructions'),
+                        'min' => 1,
+                        'type' => 'integer',
+                    ],
+                    'mode' => [
+                        'display' => __('UI Mode'),
+                        'instructions' => __('statamic::fieldtypes.relationship.config.mode'),
+                        'type' => 'radio',
+                        'default' => 'default',
+                        'options' => [
+                            'default' => __('Stack Selector'),
+                            'select' => __('Select Dropdown'),
+                            'typeahead' => __('Typeahead Field'),
+                        ],
+                    ],
+                    'collections' => [
+                        'display' => __('Collections'),
+                        'instructions' => __('statamic::fieldtypes.entries.config.collections'),
+                        'type' => 'select',
+                        'mode' => 'select',
+                        'multiple' => true,
+                        'options' => Collection::all()->filter(function ($item) {
+                            return in_array($item->handle(), Eloquenty::collections());
+                        })->mapWithKeys(function ($item) {
+                            return [$item->handle() => $item->title()];
+                        })->all(),
+                    ],
+                    'query_scopes' => [
+                        'display' => __('Query Scopes'),
+                        'instructions' => __('statamic::fieldtypes.entries.config.query_scopes'),
+                        'type' => 'taggable',
+                    ],
+                ],
             ],
-            // Show Eloquenty collections
-            'collections' => [
-                'display' => 'Eloquenty ' . __('Collections'),
-                'mode' => 'select',
-                'multiple' => true,
-                'options' => Collection::all()->filter(function ($item) {
-                    return in_array($item->handle(), Eloquenty::collections());
-                })->mapWithKeys(function ($item) {
-                    return [$item->handle() => $item->title()];
-                })->all(),
-                'type' => 'select',
-                'width' => 100,
-            ],
-        ]);
+        ];
     }
 
     protected function getIndexQuery($request)
@@ -46,7 +69,20 @@ class EloquentyEntries extends Entries
         $query = Eloquenty::repository()->query();
 
         if ($search = $request->search) {
-            $query->where('title', 'like', '%' . $search . '%');
+            $usingSearchIndex = false;
+            $collections = collect($this->getConfiguredCollections());
+
+            if ($collections->count() == 1) {
+                $collection = Collection::findByHandle($collections->first());
+                if ($collection && $collection->hasSearchIndex()) {
+                    $query = $collection->searchIndex()->ensureExists()->search($search);
+                    $usingSearchIndex = true;
+                }
+            }
+
+            if (!$usingSearchIndex) {
+                $query->where('title', 'like', '%' . $search . '%');
+            }
         }
 
         if ($site = $request->site) {
@@ -56,6 +92,8 @@ class EloquentyEntries extends Entries
         if ($request->exclusions) {
             $query->whereNotIn('id', $request->exclusions);
         }
+
+        $this->applyIndexQueryScopes($query, $request->all());
 
         return $query;
     }
@@ -67,21 +105,28 @@ class EloquentyEntries extends Entries
             return $this->invalidItemArray($id);
         }
 
-        return (new EntryResource($entry))->resolve();
+        return (new EntryResource($entry))->resolve()['data'];
     }
 
-    protected function augmentValue($value)
+    public function augment($values)
     {
-        if (!is_object($value)) {
-            // Eloquenty: Use Eloquenty repository
-            $value = Eloquenty::repository()->find($value);
+        $site = Site::current()->handle();
+        if (($parent = $this->field()->parent()) && $parent instanceof Localization) {
+            $site = $parent->locale();
         }
+        // Eloquenty: Use Eloquenty query builder
+        $ids = (new OrderedQueryBuilder(Eloquenty::repository()->query(), $ids = Arr::wrap($values)))
+            ->whereIn('id', $ids)
+            ->get()
+            ->map(function ($entry) use ($site) {
+                return optional($entry->in($site))->id();
+            })
+            ->filter()
+            ->all();
+        // Eloquenty: Use Eloquenty query builder
+        $query = (new StatusQueryBuilder(new OrderedQueryBuilder(Eloquenty::repository()->query(), $ids)))
+            ->whereIn('id', $ids);
 
-        if ($value != null && $parent = $this->field()->parent()) {
-            $site = $parent instanceof Localization ? $parent->locale() : Site::current()->handle();
-            $value = $value->in($site);
-        }
-
-        return ($value && $value->status() === 'published') ? $value : null;
+        return $this->config('max_items') === 1 ? $query->first() : $query;
     }
 }

@@ -87,6 +87,9 @@ class CollectionsController extends StatamicCollectionsController
                     'name' => $site->name(),
                 ];
             })->values()->all(),
+            'createUrls' => $collection->sites()
+                ->mapWithKeys(fn ($site) => [$site => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $site])])
+                ->all(),
         ];
 
         // Eloquenty: Operation not for eloquenty

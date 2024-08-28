@@ -8,4 +8,10 @@ return [
     'collections' => [
         //'blog',
     ],
+
+    /**
+     * Update asset references for database entries
+     */
+
+    'update_references' => true,
 ];

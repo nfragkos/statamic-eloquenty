@@ -17,12 +17,7 @@ class LocalizeEntryController extends StatamicLocalizeEntryController
         // Eloquenty: Structures are disabled for eloquenty collections
         //$this->addToStructure($collection, $entry, $localized);
 
-        // Eloquenty: Fix for creating revisions on localise request
-        if ($localized->revisionsEnabled()) {
-            $localized->store(['user' => User::fromUser($request->user())]);
-        } else {
-            $localized->published(false)->updateLastModified($user = $options['user'] ?? false)->save();
-        }
+        $localized->store(['user' => User::fromUser($request->user())]);
 
         return [
             'handle' => $site,

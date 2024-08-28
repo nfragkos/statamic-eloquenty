@@ -2,12 +2,20 @@
 
 namespace Eloquenty\Entries;
 
-use Exception;
-use Illuminate\Database\Eloquent\Model as Eloquent;
+use Eloquenty\Facades\EloquentyEntry as EntryFacade;
+use Facades\Statamic\Entries\InitiatorStack;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Entries\Entry as FileEntry;
 use Statamic\Events\EntryCreated;
+use Statamic\Events\EntryCreating;
+use Statamic\Events\EntryDeleted;
+use Statamic\Events\EntryDeleting;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
+use Statamic\Facades\Blink;
+use Statamic\Facades\Collection;
 
 /**
  * Eloquenty: From Statamic Eloquent Driver with modifications.
@@ -16,17 +24,27 @@ class Entry extends FileEntry
 {
     protected $model;
 
-    public static function fromModel(Eloquent $model)
+    public static function fromModel(Model $model)
     {
-        return (new static)
+        $entry = (new static)
+            ->origin($model->origin_id)
             ->locale($model->site)
             ->slug($model->slug)
-            ->date($model->date)
             ->collection($model->collection)
             ->data($model->data)
             ->blueprint($model->data['blueprint'] ?? null)
             ->published($model->published)
             ->model($model);
+
+        if ($model->date && $entry->collection()?->dated()) {
+            $entry->date($model->date);
+        }
+
+        if (config('statamic.system.track_last_update')) {
+            $entry->set('updated_at', $model->updated_at ?? $model->created_at);
+        }
+
+        return $entry;
     }
 
     public function toModel()
@@ -37,18 +55,26 @@ class Entry extends FileEntry
             $data['blueprint'] = $this->blueprint;
         }
 
-        //Eloquenty: Use eloquenty entry model
-        return EntryModel:: findOrNew($this->id())->fill([
-            'origin_id' => $this->originId(),
+        $attributes = [
+            'origin_id' => $this->origin()?->id(),
             'site' => $this->locale(),
             'slug' => $this->slug(),
             'uri' => $this->uri(),
             'date' => $this->hasDate() ? $this->date() : null,
             'collection' => $this->collectionHandle(),
-            'data' => $data,
+            'data' => $data->except(EntryQueryBuilder::COLUMNS),
             'published' => $this->published(),
             'status' => $this->status(),
-        ]);
+            'updated_at' => $this->lastModified(),
+            //'order'      => $this->order(), // Eloquenty: we dont have this yet
+        ];
+
+        if ($id = $this->id()) {
+            $attributes['id'] = $id;
+        }
+
+        //Eloquenty: Use eloquenty entry model
+        return EntryModel::findOrNew($this->id())->fill($attributes);
     }
 
     public function model($model = null)
@@ -64,46 +90,48 @@ class Entry extends FileEntry
         return $this;
     }
 
+    public function fileLastModified()
+    {
+        return $this->model?->updated_at ?? Carbon::now();
+    }
+
+    public function lastModified()
+    {
+        return $this->fileLastModified();
+    }
+
     public function origin($origin = null)
     {
         if (func_num_args() > 0) {
             $this->origin = $origin;
 
-            // Eloquenty: Fix when detaching descendants
-            if ($this->model) {
-                $this->model->origin_id = $origin ? $origin->id() : null;
-            }
-
             return $this;
         }
 
         if ($this->origin) {
+            if (!$this->origin instanceof EntryContract) {
+                $this->origin = EntryFacade::find($this->origin);
+            }
+
             return $this->origin;
         }
 
-        // Eloquenty: Fix error when model is null
-        if (!isset($this->model) || !$this->model->origin) {
-            return null;
+        if (!$this->model?->origin_id) {
+            return;
         }
 
-        return self::fromModel($this->model->origin);
-    }
-
-    public function originId()
-    {
-        return optional($this->origin)->id() ?? optional($this->model)->origin_id;
-    }
-
-    public function hasOrigin()
-    {
-        return $this->originId() !== null;
+        return EntryFacade::find($this->model->origin_id);
     }
 
     // Eloquenty: Fix delete entry
     public function delete()
     {
+        if (EntryDeleting::dispatch($this) === false) {
+            return false;
+        }
+
         if ($this->descendants()->map->fresh()->filter()->isNotEmpty()) {
-            throw new Exception('Cannot delete an entry with localizations.');
+            throw new \Exception('Cannot delete an entry with localizations.');
         }
 
         //if ($this->hasStructure()) {
@@ -118,13 +146,13 @@ class Entry extends FileEntry
         //                $tree->move($child->id(), optional($parent)->id());
         //            });
         //            $tree->remove($this);
-        //        });
-        //    })->save();
+        //        })->save();
+        //    });
         //}
 
-        app(EntryRepository::class)->delete($this);
+        EntryFacade::delete($this);
 
-        //EntryDeleted::dispatch($this);
+        EntryDeleted::dispatch($this);
 
         return true;
     }
@@ -132,7 +160,7 @@ class Entry extends FileEntry
     // Eloquenty: Fix detach entry localizations
     public function detachLocalizations()
     {
-        app(EntryRepository::class)->query()
+        EntryFacade::query()
             ->where('collection', $this->collectionHandle())
             ->where('origin', $this->id())
             ->get()
@@ -200,32 +228,51 @@ class Entry extends FileEntry
     public function save()
     {
         //$isNew = is_null(Facades\Entry::find($this->id()));
-        $isNew = is_null(app(EntryRepository::class)->find($this->id()));
+        $isNew = is_null(EntryFacade::find($this->id()));
+
+        $withEvents = $this->withEvents;
+        $this->withEvents = true;
 
         $afterSaveCallbacks = $this->afterSaveCallbacks;
         $this->afterSaveCallbacks = [];
-        if ($this->withEvents) {
+
+        if ($withEvents) {
+            if ($isNew && EntryCreating::dispatch($this) === false) {
+                return false;
+            }
+
             if (EntrySaving::dispatch($this) === false) {
                 return false;
             }
         }
 
         if ($this->collection()->autoGeneratesTitles()) {
-            $this->set('title', $this->autoGeneratedTitle());
+            $autoGeneratedTitle = $this->autoGeneratedTitle();
+            $originAutoGeneratedTitle = $this->origin()?->autoGeneratedTitle();
+
+            if ($autoGeneratedTitle !== $originAutoGeneratedTitle) {
+                $this->set('title', $autoGeneratedTitle);
+            }
         }
 
         $this->slug($this->slug());
 
         //Facades\Entry::save($this);
-        app(EntryRepository::class)->save($this);
+        EntryFacade::save($this);
 
-        //if ($this->id()) {
-        //    Blink::store('structure-page-entries')->forget($this->id());
-        //    Blink::store('structure-uris')->forget($this->id());
-        //    Blink::store('structure-entries')->flush();
-        //}
-        //
-        //$this->taxonomize();
+        if ($this->id()) {
+            Blink::store('structure-uris')->forget($this->id());
+            Blink::store('structure-entries')->forget($this->id());
+            Blink::forget($this->getOriginBlinkKey());
+        }
+
+        $this->ancestors()->each(fn ($entry) => Blink::forget('entry-descendants-'.$entry->id()));
+
+        $stack = InitiatorStack::entry($this)->push();
+
+        $this->directDescendants()->each->{$withEvents ? 'save' : 'saveQuietly'}();
+
+        $this->taxonomize();
 
         optional(Collection::findByMount($this))->updateEntryUris();
 
@@ -233,13 +280,23 @@ class Entry extends FileEntry
             $callback($this);
         }
 
-        if ($this->withEvents) {
+        if ($withEvents) {
             if ($isNew) {
                 EntryCreated::dispatch($this);
             }
 
             EntrySaved::dispatch($this);
         }
+
+        if ($isNew && ! $this->hasOrigin() && $this->collection()->propagate()) {
+            $this->collection()->sites()
+                ->reject($this->site()->handle())
+                ->each(function ($siteHandle) {
+                    $this->makeLocalization($siteHandle)->save();
+                });
+        }
+
+        $stack->pop();
 
         return true;
     }
@@ -251,27 +308,25 @@ class Entry extends FileEntry
             ->collection($this->collection)
             ->origin($this)
             ->locale($site)
-            ->slug($this->slug())
-            ->date($this->date());
+            ->published($this->published)
+            ->slug($this->slug());
+
+        if ($this->collection()->dated()) {
+            $localization->date($this->date());
+        }
+
+        return $localization;
     }
 
     // Eloquenty: Use Eloquenty EntryRepository for finding entry descendants
-    public function descendants()
+    public function directDescendants()
     {
-        if (!$this->localizations) {
-            $this->localizations = app(EntryRepository::class)->query()
+        return Blink::once('entry-descendants-' . $this->id(), function () {
+            return EntryFacade::query()
                 ->where('collection', $this->collectionHandle())
                 ->where('origin', $this->id())->get()
                 ->keyBy->locale();
-        }
-
-        $localizations = collect($this->localizations);
-
-        foreach ($localizations as $loc) {
-            $localizations = $localizations->merge($loc->descendants());
-        }
-
-        return $localizations;
+        });
     }
 
     // Eloquenty: Structures are disabled for eloquenty collections
@@ -279,5 +334,21 @@ class Entry extends FileEntry
     {
         // return $this->collection()->hasStructure();
         return false;
+    }
+
+    // Eloquenty: Use Eloquenty repository
+    public function fresh()
+    {
+        return EntryFacade::find($this->id);
+    }
+
+    public static function __callStatic($method, $parameters)
+    {
+        return EntryFacade::{$method}(...$parameters);
+    }
+
+    protected function getOriginByString($origin)
+    {
+        return EntryFacade::find($origin);
     }
 }

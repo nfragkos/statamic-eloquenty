@@ -8,8 +8,8 @@ This package allows you to store entries for specific collections to the databas
 
 ## Requirements
 
-- PHP 7.4+
-- Statamic v3
+- PHP 8+
+- Statamic v4
 
 ## How it works
 
@@ -89,15 +89,17 @@ In Antlers templates use the `eloquenty` tag instead of the collection tag for E
 
 ### Data retrieval and manipulation
 
-Calling the queryEloquentyEntries() method of Collection repository (**not the existing queryEntries() method**), will return the 
-correct QueryBuilder for Eloquenty collections:
+Calling the queryEntries() method of Collection repository, will return the correct QueryBuilder for Eloquenty collections:
 ```
-\Statamic\Facades\Collection::find('blog')->queryEloquentyEntries()
+\Statamic\Facades\Collection::find('blog')->queryEntries()
 ```
-Alternatively you can use the Eloquenty's Facade repository() method to retrieve the instance of EntryRepository 
+Alternatively you can use the Facade ***Eloquenty::repository()*** method or ***EloquentyEntry::query()*** to retrieve the instance of EntryRepository 
 (implements `Statamic\Contracts\Entries\EntryRepository`):
 ```
 Eloquenty\Facades\Eloquenty::repository()
+```
+```
+Eloquenty\Facades\EloquentyEntry::query()
 ```
 **Keep in mind that calling the whereCollection() method will fetch all entries in the table. You should use the query() method 
 instead that returns the query builder instance to build your query.**

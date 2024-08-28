@@ -2,6 +2,75 @@
 
 All notable changes will be documented in this file.
 
+## 3.0.0 - 2024-05-21
+
+- Statamic v5 support
+  
+## 2.0.4 - 2024-02-27
+
+- fix validateUniqueUri function
+
+## 2.0.3 - 2023-12-18
+
+- Statamic v4.41 compatibility fixes
+
+## 2.0.2 - 2023-08-16
+
+- Statamic v4.16 compatibility fixes
+
+## 2.0.1 - 2023-07-31
+
+- Fix Create not saving the entries with Eloquenty
+
+## 2.0.0 - 2023-07-27
+
+- Changes for Statamic v4.13.1+
+- Stable release
+
+## 2.0.0-beta.5 - 2023-07-04
+
+- Laravel 10 support
+
+## 2.0.0-beta.4 - 2023-06-19
+
+- Minor bug fixes (thanks @Kakoushias )
+
+## 2.0.0-beta.3 - 2023-06-16
+
+- Collection queryEntries() method will now return the correct query builder for eloquenty collections.
+- Added EloquentyEntry Facade
+
+## 2.0.0-beta.2 - 2023-05-17
+
+- Eloquenty entries field fixes
+
+## 2.0.0-beta.1 - 2023-05-17
+
+- Statamic v4 support
+- Added asset references update for db entries (can be turned off via config option: 'update_references' => false)
+
+## 1.3.2 - 2023-04-28
+
+- Fixes for entries create and edit (default values, permissions, autosave)
+
+## 1.3.1 - 2022-10-30
+
+- Fixed EntryModel to keep the id if it is defined on creating event (fixes import command)
+
+## 1.3.0 - 2022-08-01
+
+- Migrated changes from Statamic v3.3.24 (Thanks @v-subz3r0)
+- Requires Statamic >=v3.3.24
+
+## 1.2.0 - 2022-07-05
+
+- Migrated fixes from Statamic v3.3.17
+- Requires Statamic >=v3.3.17
+
+## 1.1.9 - 2022-05-20
+
+Fix EntryQueryBuilder's paginate() not compatible with EloquentQueryBuilder (thanks @dryven)
+
 ## 1.1.8 - 2022-05-10
 
 - Collections Entry Listing: Respect user-defined sort_by and sort_dir (thanks @dryven)

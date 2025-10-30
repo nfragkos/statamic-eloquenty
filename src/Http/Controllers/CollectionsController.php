@@ -35,6 +35,9 @@ class CollectionsController extends StatamicCollectionsController
                 'deleteable' => false, //User::current()->can('delete', $collection),  // Eloquenty: Operation not for eloquenty
                 'editable' => false, //User::current()->can('edit', $collection), // Eloquenty: Operation not for eloquenty
                 'blueprint_editable' => false, //User::current()->can('configure fields'), // Eloquenty: Operation not for eloquenty
+                'available_in_selected_site' => $collection->sites()->contains(Site::selected()->handle()),
+                //'actions' => Action::for($collection),
+                //'actions_url' => cp_route('collections.actions.run', ['collection' => $collection->handle()]),
             ];
         })->values();
         // Eloquenty: Use eloquenty view
@@ -42,7 +45,7 @@ class CollectionsController extends StatamicCollectionsController
             'collections' => $collections,
             'columns' => [
                 Column::make('title')->label(__('Title')),
-                Column::make('entries')->label(__('Entries')),
+                Column::make('entries')->label(__('Entries'))->numeric(true),
             ],
         ]);
     }

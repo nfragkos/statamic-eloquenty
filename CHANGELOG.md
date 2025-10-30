@@ -2,6 +2,20 @@
 
 All notable changes will be documented in this file.
 
+## 3.0.2 - 2025-10-30
+
+- Updated composer.json for Laravel 12 support.
+- Collections listing url fix.
+
+## 3.0.1 - 2024-08-28
+
+- Fix CollectionsController@index not compatible with parent: Add $request parameter to index method (thanks @dryven-daniel)
+- Don't validate unique uri if slugs are not required: For collections without slugs, the slug validation fails. This commit allows these type of entries to pass the validation (thanks @dryven-daniel)
+
+## 3.0.0 - 2024-05-21
+
+- Statamic v5 support
+
 ## 3.0.0 - 2024-05-21
 
 - Statamic v5 support

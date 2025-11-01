@@ -2,6 +2,10 @@
 
 All notable changes will be documented in this file.
 
+## 3.0.3 - 2025-11-01
+
+- Eloqunty Collections UI fixes (added missing Collection actions).
+  
 ## 3.0.2 - 2025-10-30
 
 - Updated composer.json for Laravel 12 support.

@@ -2,16 +2,19 @@
 
 namespace Eloquenty\Http\Controllers;
 
+use Eloquenty\Facades\Eloquenty;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use Eloquenty\Facades\Eloquenty;
 use Statamic\Contracts\Entries\Collection as CollectionContract;
+use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\CP\Column;
+use Statamic\Facades\Action;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Scope;
 use Statamic\Facades\Site;
 use Statamic\Facades\User;
 use Statamic\Http\Controllers\CP\Collections\CollectionsController as StatamicCollectionsController;
+use function Statamic\trans as __;
 
 class CollectionsController extends StatamicCollectionsController
 {
@@ -19,9 +22,34 @@ class CollectionsController extends StatamicCollectionsController
     {
         $this->authorize('index', CollectionContract::class, __('You are not authorized to view collections.'));
 
-        $collections = Collection::all()->filter(function ($collection) {
+        $columns = [
+            Column::make('title')->label(__('Title')),
+            Column::make('entries')->label(__('Entries'))->numeric(true),
+        ];
+
+        if ($request->wantsJson()) {
+            return [
+                'data' => $this->collections(),
+                'meta' => [
+                    'columns' => $columns,
+                ],
+            ];
+        }
+
+        // Eloquenty: Use eloquenty view
+        return view('eloquenty::collections.index', [
+            'collections' => $this->collections(),
+            'columns' => $columns,
+        ]);
+    }
+
+    private function collections()
+    {
+        return Collection::all()->filter(function ($collection) {
             // Eloquenty: Filter non eloquenty collections
-            return in_array($collection->handle(), Eloquenty::collections()) && User::current()->can('view', $collection);
+            return in_array($collection->handle(), Eloquenty::collections()) &&
+                (User::current()->can('configure collections') || User::current()->can('view', $collection)) &&
+                $collection->sites()->contains(Site::selected()->handle());
         })->map(function ($collection) {
             return [
                 'id' => $collection->handle(),
@@ -32,22 +60,14 @@ class CollectionsController extends StatamicCollectionsController
                 'entries_url' => cp_route('eloquenty.collections.show', $collection->handle()),
                 'blueprints_url' => cp_route('collections.blueprints.index', $collection->handle()),
                 'scaffold_url' => cp_route('collections.scaffold', $collection->handle()),
-                'deleteable' => false, //User::current()->can('delete', $collection),  // Eloquenty: Operation not for eloquenty
-                'editable' => false, //User::current()->can('edit', $collection), // Eloquenty: Operation not for eloquenty
-                'blueprint_editable' => false, //User::current()->can('configure fields'), // Eloquenty: Operation not for eloquenty
+                'deleteable' => User::current()->can('delete', $collection),
+                'editable' => User::current()->can('edit', $collection),
+                'blueprint_editable' => User::current()->can('configure fields'),
                 'available_in_selected_site' => $collection->sites()->contains(Site::selected()->handle()),
-                //'actions' => Action::for($collection),
-                //'actions_url' => cp_route('collections.actions.run', ['collection' => $collection->handle()]),
+                'actions' => Action::for($collection),
+                'actions_url' => cp_route('collections.actions.run', ['collection' => $collection->handle()]),
             ];
         })->values();
-        // Eloquenty: Use eloquenty view
-        return view('eloquenty::collections.index', [
-            'collections' => $collections,
-            'columns' => [
-                Column::make('title')->label(__('Title')),
-                Column::make('entries')->label(__('Entries'))->numeric(true),
-            ],
-        ]);
     }
 
     public function show(Request $request, $collection): View
@@ -82,17 +102,15 @@ class CollectionsController extends StatamicCollectionsController
                 'collection' => $collection->handle(),
                 'blueprints' => $blueprints->pluck('handle')->all(),
             ]),
-            'sites' => $collection->sites()->map(function ($site) {
-                $site = Site::get($site);
-
-                return [
-                    'handle' => $site->handle(),
-                    'name' => $site->name(),
-                ];
-            })->values()->all(),
+            'sites' => $authorizedSites = $this->getAuthorizedSitesForCollection($collection),
             'createUrls' => $collection->sites()
-                ->mapWithKeys(fn ($site) => [$site => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $site])])
-                ->all(),
+                ->mapWithKeys(fn($site) => [
+                    $site => cp_route('eloquenty.collections.entries.create', [$collection->handle(), $site])
+                ])->all(),
+            'canCreate' => User::current()->can('create', [EntryContract::class, $collection]) &&
+                $collection->hasVisibleEntryBlueprint(),
+            'canChangeLocalizationDeleteBehavior' => count($authorizedSites) > 1 && (count($authorizedSites) == $collection->sites()->count()),
+            'actions' => Action::for($collection, ['view' => 'form']),
         ];
 
         // Eloquenty: Operation not for eloquenty
